@@ -25,7 +25,9 @@ public class ChessGUI extends Application {
     private Square selectedSquare;
     private Board board;
     private Canvas chessCanvas;
+    private StackPane root;
     private GraphicsContext gc;
+    private boolean isGameOver = false;
 
     public static void main(String[] args) {
         launch(args);
@@ -53,7 +55,7 @@ public class ChessGUI extends Application {
         chessCanvas.setOnMousePressed(this::handleMousePressed);
 
         // Setup stage
-        StackPane root = new StackPane(chessCanvas);
+        root = new StackPane(chessCanvas);
         primaryStage.setScene(new Scene(root, boardSize, boardSize));
         primaryStage.setTitle("Chess");
         primaryStage.getIcons().add(new Image("chess/gui/images/twinRooks.png"));
@@ -110,6 +112,9 @@ public class ChessGUI extends Application {
     }
 
     private void handleMousePressed(MouseEvent event) {
+        if (isGameOver) {
+            return;
+        }
         int col = (int) (event.getX() / squareSize);
         int guiRow = (int) (event.getY() / squareSize);
 
@@ -122,9 +127,6 @@ public class ChessGUI extends Application {
         // Check if clicking on a possible move
         if (possibleMoves.contains(clickedSquare)) {
             board.move(selectedSquare, clickedSquare);
-            if (board.isCheckmate("white") || board.isCheckmate("black")) {
-                System.out.println("Checkmate");
-            }
             selectedSquare = null;
             possibleMoves.clear();
         } else {
@@ -140,5 +142,36 @@ public class ChessGUI extends Application {
         }
 
         drawBoard();
+        checkIfGameEnded();
+    }
+
+    private void checkIfGameEnded() {
+        if (board.isInsufficientMaterial()) {
+            showDrawModal("insufficient material");
+            isGameOver = true;
+        } else if (board.isThreefoldRepetition()) {
+            showDrawModal("threefold repetition");
+            isGameOver = true;
+        } else if (board.isHalfMoveClockAtLeast50()) {
+            showDrawModal("50 move rule");
+            isGameOver = true;
+        } else if (board.isCheckmate(board.getNextPlayerColor())) {
+            showWinnerModal(board.getNextPlayerColor().equals("white") ? "black" : "white");
+            isGameOver = true;
+        } else if (board.isStalemate(board.getNextPlayerColor())) {
+            showDrawModal("stalemate");
+            isGameOver = true;
+        }
+    }
+
+    private void showWinnerModal(String winner) {
+        Canvas winnerCanvas = new Canvas(200, 200);
+        GraphicsContext wc = winnerCanvas.getGraphicsContext2D();
+        wc.fillText(winner + " has won!", 100, 100);
+        root.getChildren().add(winnerCanvas);
+    }
+
+    private void showDrawModal(String reason) {
+        System.out.println("draw due to " + reason);
     }
 }

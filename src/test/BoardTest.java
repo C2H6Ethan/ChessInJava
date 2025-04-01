@@ -81,6 +81,17 @@ class BoardTest {
     }
 
     @Test
+    void nonLegalColorMove() {
+        Board board = new Board();
+        board.getSquare(1, 0).setPiece(new Pawn("white"));
+        board.getSquare(6, 0).setPiece(new Pawn("black"));
+
+        assertTrue(board.isLegalMove(board.getSquare(1,0), board.getSquare(2,0)));
+        board.move(board.getSquare(1,0), board.getSquare(2,0));
+        assertFalse(board.isLegalMove(board.getSquare(2,0), board.getSquare(3,0)));
+    }
+
+    @Test
     void testCaptureMove() {
         Board board = new Board();
         board.getSquare(1, 0).setPiece(new Pawn("white"));

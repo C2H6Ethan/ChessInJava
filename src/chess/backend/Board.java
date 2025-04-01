@@ -89,6 +89,10 @@ public class Board {
             return false;
         }
 
+        if (!sourcePiece.getColor().equals(getNextPlayerColor())) {
+            return false;
+        }
+
         if (sourcePiece.isValidMove(from, to, this)) {
             // check if move results in a check
 
@@ -223,6 +227,15 @@ public class Board {
         return halfMoveClock >= 50;
     }
 
+    public String getNextPlayerColor() {
+        String nextPlayerColor = "white";
+        if (lastMove != null) {
+            nextPlayerColor = lastMove.getMovingPiece().getColor().equals("white") ? "black" : "white";
+        }
+
+        return nextPlayerColor;
+    }
+
     // Helper Methods
     private boolean isValidPosition(int row, int col) {
         return row >= 0 && row < 8 && col >= 0 && col < 8;
@@ -330,14 +343,9 @@ public class Board {
     }
 
     private GameState getCurrentState() {
-        String nextPlayerColor = "white";
-        if (lastMove != null) {
-            nextPlayerColor = lastMove.getMovingPiece().getColor().equals("white") ? "black" : "white";
-        }
-
         return new GameState(
                 squares,
-                nextPlayerColor,
+                getNextPlayerColor(),
                 castlingRights,
                 enPassantTarget
         );
