@@ -43,7 +43,10 @@ public class ChessGUI extends Application {
     @Override
     public void start(Stage primaryStage) {
         board = new Board();
-        board.setupPieces();
+        //board.setupPieces();
+        board.randomlySetPiece(new King("white"));
+        board.randomlySetPiece(new King("black"));
+        board.randomlySetPiece(new Queen("white"));
         board.setPromotionHandler(new GUIPromotionHandler(this));
 
         bot = new RandomBot(board);
@@ -224,7 +227,7 @@ public class ChessGUI extends Application {
         // Add crown icon for winner
         ImageView crown = new ImageView();
         try {
-            Image crownImage = new Image("chess/gui/images/crown_" + ".png"); // Todo
+            Image crownImage = new Image("chess/gui/images/twinRooks.png"); // Todo
             crown.setImage(crownImage);
             crown.setFitWidth(60);
             crown.setFitHeight(60);

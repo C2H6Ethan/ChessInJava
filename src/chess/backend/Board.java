@@ -60,6 +60,24 @@ public class Board {
         }
     }
 
+    public void randomlySetPiece(Piece piece) {
+        boolean hasFoundEmptySquare = false;
+        Random rand = new Random();
+
+        while (!hasFoundEmptySquare) {
+            int randRow = rand.nextInt(8);
+            int randCol = rand.nextInt(8);
+
+            Square randSquare = getSquare(randRow, randCol);
+
+            if (randSquare.getPiece() == null) {
+                hasFoundEmptySquare = true;
+                randSquare.setPiece(piece);
+            }
+        }
+
+    }
+
     public Square getSquare(int row, int col) {
         if (!isValidPosition(row, col)) {
             throw new IllegalArgumentException("row and/or col out of bounds!");
@@ -107,7 +125,6 @@ public class Board {
             from.setPiece(null);
             lastMove = new Move(from, to, sourcePiece);
             sourcePiece.incrementMoveCount();
-
             boolean isInCheck = isInCheck(sourcePiece.getColor());
 
             // Undo move to restore board state
@@ -149,7 +166,7 @@ public class Board {
         for (int row = 0; row < 8; row++) {
             for (int col = 0; col < 8; col++) {
                 Square targetSquare = getSquare(row, col);
-                if (isLegalMove(sourceSquare, targetSquare)) {
+                if (!sourceSquare.equals(targetSquare) && isLegalMove(sourceSquare, targetSquare)) {
                     possibleDestinationSquares.add(targetSquare);
                 }
             }
@@ -173,8 +190,9 @@ public class Board {
         // create and use method: isPieceAttacking(Class<?> pieceClass, String colorOfAttacker, int direction)
         for (int row = 0; row < 8; row++) {
             for (int col = 0; col < 8; col++) {
-                Piece p = getPieceAt(row, col);
-                if (p != null && p.getColor().equals(colorOfAttacker) && p.isValidMove(getSquare(row, col), squareUnderAttack, this)) {
+                Square s = getSquare(row, col);
+                Piece p = s.getPiece();
+                if (!s.equals(squareUnderAttack) && p != null && p.getColor().equals(colorOfAttacker) && p.isValidMove(getSquare(row, col), squareUnderAttack, this)) {
                     return true;
                 }
             }

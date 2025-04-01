@@ -27,10 +27,6 @@ public class King extends Piece {
         }
 
         if (isCastle(from, to)) {
-            if (board.isInCheck(from.getPiece().getColor())) {
-                return false;
-            }
-
             Square rookSquare;
             int colStep;
             int row = getColor().equals("white") ? 0 : 7;
@@ -64,6 +60,10 @@ public class King extends Piece {
                     return false;
                 }
             }
+
+            if (board.isInCheck(from.getPiece().getColor())) {
+                return false;
+            }
         }
 
 
@@ -71,8 +71,9 @@ public class King extends Piece {
     }
 
     public boolean isCastle(Square from, Square to) {
+        int rowDiff = Math.abs(from.getRow() - to.getRow());
         int colDiff = Math.abs(from.getCol() - to.getCol());
-        if (colDiff == 2) {
+        if (colDiff == 2 && rowDiff == 0) {
             return true;
         }
         return false;
