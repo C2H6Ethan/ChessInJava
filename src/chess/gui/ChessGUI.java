@@ -37,8 +37,7 @@ public class ChessGUI extends Application {
         board.setupPieces();
 
         // Setup screen dimensions
-        var screens = Screen.getScreens();
-        Screen screen = screens.getLast();
+        Screen screen = Screen.getPrimary();
         Rectangle2D bounds = screen.getVisualBounds();
         double boardSize = bounds.getHeight() * 0.8;
         squareSize = boardSize / 8;
@@ -57,6 +56,7 @@ public class ChessGUI extends Application {
         StackPane root = new StackPane(chessCanvas);
         primaryStage.setScene(new Scene(root, boardSize, boardSize));
         primaryStage.setTitle("Chess");
+        primaryStage.getIcons().add(new Image("chess/gui/images/twinRooks.png"));
         primaryStage.setX((bounds.getMinX() + bounds.getMaxX()) / 2 - boardSize / 2);
         primaryStage.setY((bounds.getMinY() + bounds.getMaxY()) / 2 - boardSize / 2);
         primaryStage.setResizable(false); // TODO
@@ -100,9 +100,9 @@ public class ChessGUI extends Application {
 
         // Draw possible moves
         gc.setFill(Color.BLACK.deriveColor(0, 1, 1, 0.25));
-        for (Square move : possibleMoves) {
-            int guiRow = 7 - move.getRow(); // Convert backend row to GUI row
-            double centerX = move.getCol() * squareSize + squareSize/2;
+        for (Square destinationSquare : possibleMoves) {
+            int guiRow = 7 - destinationSquare.getRow();
+            double centerX = destinationSquare.getCol() * squareSize + squareSize/2;
             double centerY = guiRow * squareSize + squareSize/2;
             double radius = squareSize * 0.15;
             gc.fillOval(centerX - radius, centerY - radius, radius * 2, radius * 2);
@@ -122,6 +122,9 @@ public class ChessGUI extends Application {
         // Check if clicking on a possible move
         if (possibleMoves.contains(clickedSquare)) {
             board.move(selectedSquare, clickedSquare);
+            if (board.isCheckmate("white") || board.isCheckmate("black")) {
+                System.out.println("Checkmate");
+            }
             selectedSquare = null;
             possibleMoves.clear();
         } else {
