@@ -1,6 +1,8 @@
 package chess.gui;
 
 import chess.backend.*;
+import chess.bots.ChessBot;
+import chess.bots.RandomBot;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.geometry.Pos;
@@ -32,6 +34,7 @@ public class ChessGUI extends Application {
     private StackPane root;
     private GraphicsContext gc;
     private boolean isGameOver = false;
+    private ChessBot bot;
 
     public static void main(String[] args) {
         launch(args);
@@ -42,6 +45,8 @@ public class ChessGUI extends Application {
         board = new Board();
         board.setupPieces();
         board.setPromotionHandler(new GUIPromotionHandler(this));
+
+        bot = new RandomBot(board);
 
         setupGUI(primaryStage);
     }
@@ -142,9 +147,12 @@ public class ChessGUI extends Application {
             selectedSquare = null;
             possibleMoves.clear();
             if (!isPawnPromoting) {
+                // otherwise wait until promotion piece has been selected (handlePromotionSelection)
                 checkIfGameEnded();
-            }
 
+                // Now the bot makes its move
+                moveBot();
+            }
         } else {
             // Check if clicking on a piece
             if (board.getPieceAt(row, col) != null) {
@@ -160,8 +168,15 @@ public class ChessGUI extends Application {
         drawBoard();
     }
 
+    private void moveBot() {
+        if (!isGameOver) {
+            bot.makeMove();
+            drawBoard();
+            checkIfGameEnded();
+        }
+    }
+
     private void checkIfGameEnded() {
-        System.out.println("checked");
         if (board.isInsufficientMaterial()) {
             showGameOverModal("Draw!", "insufficient material");
             isGameOver = true;
@@ -295,6 +310,8 @@ public class ChessGUI extends Application {
                 // Redraw the board to show the promoted piece
                 gui.drawBoard();
                 gui.checkIfGameEnded();
+
+                gui.moveBot();
             }
         }
 
