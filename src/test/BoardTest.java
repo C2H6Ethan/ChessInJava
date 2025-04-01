@@ -546,4 +546,23 @@ class BoardTest {
         assertFalse(board.isHalfMoveClockAtLeast50());
         assertEquals(50, moveCounter);
     }
+
+    @Test
+    void undoCastleMove() {
+        Board board = new Board();
+        King whiteKing = new King("white");
+        Rook whiteRook = new Rook("white");
+        Square from = board.getSquare(0, 4);
+        Square to = board.getSquare(0, 6);
+        from.setPiece(whiteKing);
+        board.getSquare(0, 7).setPiece(whiteRook);
+
+        board.move(from, to);
+        assertNotNull(board.getPieceAt(0, 5));
+
+        // undo
+        board.undoLastMove();
+        assertEquals(board.getPieceAt(0,7), whiteRook);
+        assertEquals(board.getPieceAt(0,4), whiteKing);
+    }
 }

@@ -1,17 +1,18 @@
 package chess.backend;
 
+import javafx.util.Pair;
+
 import java.util.*;
 import java.util.function.Consumer;
 
 public class Board {
     private final Square[][] squares;
-    private Move lastMove;
+    private final Stack<Move> moveHistory = new Stack<>();
     private PromotionHandler promotionHandler = new DefaultPromotionHandler();
     private final CastlingRights castlingRights = new CastlingRights(true, true, true, true);
     private Square enPassantTarget;
     private final Map<GameState, Integer> stateCounts = new HashMap<>();
-    private Stack<GameState> gameHistory = new Stack<>();
-    private Stack<GameState> redoStack = new Stack<>(); // undo and redo functionality to be implemented
+    private final Stack<GameState> gameHistory = new Stack<>(); // todo: zobrist hash
     private int halfMoveClock = 0;
 
     public Board() {
@@ -115,28 +116,36 @@ public class Board {
         if (sourcePiece.isValidMove(from, to, this)) {
             // check if move results in a check
 
-            // Store board state before making the move
-            Piece capturedPiece = to.getPiece();
-            int originalMoveCount = sourcePiece.getMoveCount();
-            Move lastMoveBackup = lastMove;
-
             // Simulate the move
-            to.setPiece(sourcePiece);
-            from.setPiece(null);
-            lastMove = new Move(from, to, sourcePiece);
-            sourcePiece.incrementMoveCount();
+            move(from, to);
             boolean isInCheck = isInCheck(sourcePiece.getColor());
 
-            // Undo move to restore board state
-            from.setPiece(sourcePiece);
-            to.setPiece(capturedPiece);
-            sourcePiece.setMoveCount(originalMoveCount);
-            lastMove = lastMoveBackup;
+            undoLastMove();
 
             return !isInCheck;
         }
 
         return false;
+    }
+
+    public void undoLastMove() {
+        // Undo move to restore board state
+        Move lastMove = moveHistory.pop();
+        lastMove.getFrom().setPiece(lastMove.getMovingPiece());
+        lastMove.getTo().setPiece(lastMove.getCapturedPiece());
+        lastMove.getMovingPiece().setMoveCount(lastMove.getMovingPiece().getMoveCount() - 1);
+
+        if (lastMove.getMovingPiece() instanceof King && ((King) lastMove.getMovingPiece()).isCastle(lastMove.getFrom(), lastMove.getTo())) {
+            int row = lastMove.getMovingPiece().getColor().equals("white") ? 0 : 7;
+            int colBefore = lastMove.getTo().getCol() < lastMove.getFrom().getCol() ? 0 : 7;
+            int colNow = lastMove.getTo().getCol() < lastMove.getFrom().getCol() ? 3 : 5;
+
+            Square rookNowSquare = getSquare(row, colNow);
+            Square rookBeforeSquare = getSquare(row, colBefore);
+            rookBeforeSquare.setPiece(rookNowSquare.getPiece());
+            rookNowSquare.setPiece(null);
+        }
+
     }
 
     public Piece getPieceAt(int row, int col) {
@@ -153,7 +162,7 @@ public class Board {
     }
 
     public Move getLastMove() {
-        return lastMove;
+        return moveHistory.getLast();
     }
 
     public List<Square> getPossibleDestinationSquares(Square sourceSquare) {
@@ -248,11 +257,29 @@ public class Board {
 
     public String getNextPlayerColor() {
         String nextPlayerColor = "white";
-        if (lastMove != null) {
-            nextPlayerColor = lastMove.getMovingPiece().getColor().equals("white") ? "black" : "white";
+        if (!moveHistory.isEmpty()) {
+            nextPlayerColor = moveHistory.getLast().getMovingPiece().getColor().equals("white") ? "black" : "white";
         }
 
         return nextPlayerColor;
+    }
+
+    public List<Move> generateAllLegalMoves() {
+        List<Move> allLegalMoves = new ArrayList<>();
+        for (int row = 0; row < 8; row++) {
+            for (int col = 0; col < 8; col++) {
+                Square square = getSquare(row, col);
+                Piece piece = square.getPiece();
+                if (piece != null) {
+                    List<Square> possibleDestinationSquares = getPossibleDestinationSquares(square);
+                    for (Square destinationSquare : possibleDestinationSquares) {
+                        allLegalMoves.add(new Move(square, destinationSquare, piece, destinationSquare.getPiece()));
+                    }
+                }
+            }
+        }
+
+        return allLegalMoves;
     }
 
     // Helper Methods
@@ -291,10 +318,10 @@ public class Board {
 
     private void movePiece(Square from, Square to) {
         Piece piece = from.getPiece();
+        piece.incrementMoveCount();
+        moveHistory.push(new Move(from, to, piece, to.getPiece()));
         to.setPiece(piece);
         from.setPiece(null);
-        piece.incrementMoveCount();
-        lastMove = new Move(from, to, piece);
     }
 
     private void handlePromotion(Square to) {
