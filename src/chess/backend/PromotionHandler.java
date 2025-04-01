@@ -1,6 +1,8 @@
 package chess.backend;
 
+import java.util.function.Consumer;
+
 public interface PromotionHandler {
-    PieceType choosePromotionPiece(Pawn promotingPawn);
+    void choosePromotionPiece(Pawn promotingPawn, Consumer<PieceType> callback);
 }
 

@@ -1,6 +1,7 @@
 package chess.backend;
 
 import java.util.*;
+import java.util.function.Consumer;
 
 public class Board {
     private final Square[][] squares;
@@ -32,8 +33,8 @@ public class Board {
     // Default behavior (e.g., always promote to Queen)
     private static class DefaultPromotionHandler implements PromotionHandler {
         @Override
-        public PieceType choosePromotionPiece(Pawn promotingPawn) {
-            return PieceType.QUEEN;
+        public void choosePromotionPiece(Pawn promotingPawn, Consumer<PieceType> callback) {
+            callback.accept(PieceType.QUEEN);
         }
     }
 
@@ -280,14 +281,17 @@ public class Board {
 
     private void handlePromotion(Square to) {
         Piece piece = to.getPiece();
-        if (piece instanceof Pawn && (to.getRow() == 0 || to.getRow() == 7)) {
-            PieceType promotedType = promotionHandler.choosePromotionPiece((Pawn) piece);
-            Piece newPiece = createPromotedPiece(
-                    promotedType,
-                    (Pawn) piece,
-                    to.getColor().equals("white")
-            );
-            to.setPiece(newPiece);
+        if (piece instanceof Pawn promotingPawn && (to.getRow() == 0 || to.getRow() == 7)) {
+
+            // Use the GUI callback-based promotion
+            promotionHandler.choosePromotionPiece(promotingPawn, selectedType -> {
+                // Ensure a valid piece type is chosen (fallback to Queen if null)
+                PieceType promotedType = (selectedType != null) ? selectedType : PieceType.QUEEN;
+
+                // Create the promoted piece
+                Piece newPiece = createPromotedPiece(promotedType, promotingPawn, to.getColor().equals("white"));
+                to.setPiece(newPiece);
+            });
         }
     }
 

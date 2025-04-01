@@ -1,23 +1,27 @@
 package chess.gui;
 
+import chess.backend.*;
 import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.geometry.Pos;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 
-import chess.backend.Square;
-import chess.backend.Board;
-import chess.backend.Piece;
-
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 public class ChessGUI extends Application {
     private final List<Square> possibleMoves = new ArrayList<>();
@@ -37,9 +41,14 @@ public class ChessGUI extends Application {
     public void start(Stage primaryStage) {
         board = new Board();
         board.setupPieces();
+        board.setPromotionHandler(new GUIPromotionHandler(this));
 
+        setupGUI(primaryStage);
+    }
+
+    private void setupGUI(Stage primaryStage) {
         // Setup screen dimensions
-        Screen screen = Screen.getPrimary();
+        Screen screen = Screen.getScreens().getLast();
         Rectangle2D bounds = screen.getVisualBounds();
         double boardSize = bounds.getHeight() * 0.8;
         squareSize = boardSize / 8;
@@ -126,9 +135,16 @@ public class ChessGUI extends Application {
 
         // Check if clicking on a possible move
         if (possibleMoves.contains(clickedSquare)) {
+            Piece movedPiece = board.getPieceAt(selectedSquare.getRow(), selectedSquare.getCol());
+            boolean isPawnPromoting = (movedPiece instanceof Pawn && (clickedSquare.getRow() == 0 || clickedSquare.getRow() == 7));
+
             board.move(selectedSquare, clickedSquare);
             selectedSquare = null;
             possibleMoves.clear();
+            if (!isPawnPromoting) {
+                checkIfGameEnded();
+            }
+
         } else {
             // Check if clicking on a piece
             if (board.getPieceAt(row, col) != null) {
@@ -142,36 +158,145 @@ public class ChessGUI extends Application {
         }
 
         drawBoard();
-        checkIfGameEnded();
     }
 
     private void checkIfGameEnded() {
+        System.out.println("checked");
         if (board.isInsufficientMaterial()) {
-            showDrawModal("insufficient material");
+            showGameOverModal("Draw!", "insufficient material");
             isGameOver = true;
         } else if (board.isThreefoldRepetition()) {
-            showDrawModal("threefold repetition");
+            showGameOverModal("Draw!", "threefold repetition");
             isGameOver = true;
         } else if (board.isHalfMoveClockAtLeast50()) {
-            showDrawModal("50 move rule");
+            showGameOverModal("Draw!", "50 move rule");
             isGameOver = true;
         } else if (board.isCheckmate(board.getNextPlayerColor())) {
-            showWinnerModal(board.getNextPlayerColor().equals("white") ? "black" : "white");
+            showGameOverModal("Checkmate!", (board.getNextPlayerColor().equals("white") ? "black" : "white") +  " wins");
             isGameOver = true;
         } else if (board.isStalemate(board.getNextPlayerColor())) {
-            showDrawModal("stalemate");
+            showGameOverModal("Draw!", "stalemate");
             isGameOver = true;
         }
     }
 
-    private void showWinnerModal(String winner) {
-        Canvas winnerCanvas = new Canvas(200, 200);
-        GraphicsContext wc = winnerCanvas.getGraphicsContext2D();
-        wc.fillText(winner + " has won!", 100, 100);
-        root.getChildren().add(winnerCanvas);
+    private void showGameOverModal(String title, String message) {
+        // Create a semi-transparent overlay
+        Canvas overlay = new Canvas(chessCanvas.getWidth(), chessCanvas.getHeight());
+        GraphicsContext overlayGC = overlay.getGraphicsContext2D();
+        overlayGC.setFill(Color.BLACK.deriveColor(0, 1, 1, 0.5));
+        overlayGC.fillRect(0, 0, overlay.getWidth(), overlay.getHeight());
+
+        // Create modal content
+        StackPane modal = new StackPane();
+        modal.setStyle("-fx-background-color: linear-gradient(to bottom, #f0f0f0, #e0e0e0); " +
+                "-fx-background-radius: 15; " +
+                "-fx-padding: 20; " +
+                "-fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.3), 10, 0, 0, 0);");
+        modal.setMaxWidth(chessCanvas.getWidth() * 0.6);
+        modal.setMaxHeight(chessCanvas.getHeight() * 0.4);
+
+        // Create content
+        VBox content = new VBox(20);
+        content.setAlignment(Pos.CENTER);
+
+        Label titleLabel = new Label(title);
+        titleLabel.setStyle("-fx-font-size: 32px; -fx-font-weight: bold;");
+
+        Label winnerLabel = new Label(message);
+        winnerLabel.setStyle("-fx-font-size: 24px; -fx-font-weight: bold; ");
+
+        // Add crown icon for winner
+        ImageView crown = new ImageView();
+        try {
+            Image crownImage = new Image("chess/gui/images/crown_" + ".png"); // Todo
+            crown.setImage(crownImage);
+            crown.setFitWidth(60);
+            crown.setFitHeight(60);
+        } catch (Exception e) {
+            // Fallback if image not found
+            crown = new ImageView();
+        }
+
+        Button closeButton = new Button("Close");
+        closeButton.setStyle("-fx-background-color: #4a6fa5; -fx-text-fill: white; -fx-font-weight: bold;");
+        closeButton.setOnAction(_ -> Platform.exit());
+
+        content.getChildren().addAll(titleLabel, crown, winnerLabel, closeButton);
+        modal.getChildren().add(content);
+
+        // Add to root
+        root.getChildren().addAll(overlay, modal);
+
+        // Center the modal
+        StackPane.setAlignment(modal, Pos.CENTER);
     }
 
-    private void showDrawModal(String reason) {
-        System.out.println("draw due to " + reason);
+    private static class GUIPromotionHandler implements PromotionHandler {
+        private final ChessGUI gui;
+        private final List<PieceType> promotionPieces = List.of(
+                PieceType.QUEEN,
+                PieceType.ROOK,
+                PieceType.BISHOP,
+                PieceType.KNIGHT
+        );
+        private Canvas overlay;
+        private Canvas selectionCanvas;
+
+        public GUIPromotionHandler(ChessGUI gui) {
+            this.gui = gui;
+        }
+
+        @Override
+        public void choosePromotionPiece(Pawn promotingPawn, Consumer<PieceType> callback) {
+            Platform.runLater(() -> showPromotionDialog(promotingPawn, callback));
+        }
+
+        private void showPromotionDialog(Pawn promotingPawn, Consumer<PieceType> callback) {
+            StackPane root = gui.root;
+            Canvas chessCanvas = gui.chessCanvas;
+            double squareSize = gui.squareSize;
+
+            // Create a semi-transparent overlay
+            overlay = new Canvas(chessCanvas.getWidth(), chessCanvas.getHeight());
+            GraphicsContext overlayGC = overlay.getGraphicsContext2D();
+            overlayGC.setFill(Color.BLACK.deriveColor(0, 1, 1, 0.5));
+            overlayGC.fillRect(0, 0, overlay.getWidth(), overlay.getHeight());
+
+            // Create selection canvas
+            selectionCanvas = new Canvas(squareSize * 4, squareSize);
+            GraphicsContext sc = selectionCanvas.getGraphicsContext2D();
+            sc.setFill(Color.LIGHTBLUE.deriveColor(0, 1, 1, 0.7));
+            sc.fillRoundRect(0, 0, squareSize * 4, squareSize, 15, 15);
+
+            for (int i = 0; i < promotionPieces.size(); i++) {
+                PieceType type = promotionPieces.get(i);
+                Image pieceImage = new Image("chess/gui/images/" + promotingPawn.getColor() + " " + type + ".png");
+                sc.drawImage(pieceImage, i * squareSize, 0, squareSize, squareSize);
+            }
+
+            selectionCanvas.setOnMousePressed(event -> handlePromotionSelection(event, callback));
+
+            // Add to root
+            root.getChildren().addAll(overlay, selectionCanvas);
+        }
+
+        private void handlePromotionSelection(MouseEvent event, Consumer<PieceType> callback) {
+            double squareSize = gui.squareSize;
+            int index = (int) (event.getX() / squareSize);
+
+            if (index >= 0 && index < promotionPieces.size()) {
+                PieceType selectedPiece = promotionPieces.get(index);
+                gui.root.getChildren().removeAll(overlay, selectionCanvas);
+
+                // Call the callback with the selected piece
+                callback.accept(selectedPiece);
+
+                // Redraw the board to show the promoted piece
+                gui.drawBoard();
+                gui.checkIfGameEnded();
+            }
+        }
+
     }
 }
