@@ -1,7 +1,5 @@
 package chess.backend;
 
-import javafx.util.Pair;
-
 import java.util.*;
 import java.util.function.Consumer;
 
@@ -14,6 +12,7 @@ public class Board {
     private final Map<GameState, Integer> stateCounts = new HashMap<>();
     private final Stack<GameState> gameHistory = new Stack<>(); // todo: zobrist hash
     private int halfMoveClock = 0;
+    private String nextPlayerColor = "white";
 
     public Board() {
         // create squares
@@ -25,6 +24,8 @@ public class Board {
             }
         }
     }
+
+    //todo: create second constructor with FEN string
 
     // Allow UI to override the handler later
     public void setPromotionHandler(PromotionHandler handler) {
@@ -76,7 +77,6 @@ public class Board {
                 randSquare.setPiece(piece);
             }
         }
-
     }
 
     public Square getSquare(int row, int col) {
@@ -87,6 +87,12 @@ public class Board {
     }
 
     public void move(Square from, Square to) {
+        // keeping this to not break tests
+        move(from, to, null);
+    }
+
+    public void move(Square from, Square to, PieceType promotionPieceType) {
+        // moves piece and updates game rule accordingly but does not check if move is legal
         if (gameHistory.empty()) gameHistory.add(getCurrentState());
 
         Piece piece = from.getPiece();
@@ -96,11 +102,12 @@ public class Board {
         handleCastling(piece, from, to);
 
         movePiece(from, to);
-        handlePromotion(to);
+        handlePromotion(to, promotionPieceType);
 
+        setNextPlayerColor(piece.getColor().equals("white") ? "black" : "white");
         updateCastlingRights(piece, from);
         updateEnPassantTarget(piece, from, to);
-        recordGameState();
+        //recordGameState();
     }
 
     public boolean isLegalMove(Square from, Square to) {
@@ -131,20 +138,106 @@ public class Board {
     public void undoLastMove() {
         // Undo move to restore board state
         Move lastMove = moveHistory.pop();
+
+        // remove state from map if value will be 0
+        if (!stateCounts.isEmpty()) {
+            // should never be empty if recordGameState() in move method is not uncommented
+            GameState currentState = gameHistory.pop();
+            if (stateCounts.get(currentState) == 1) {
+                stateCounts.remove(currentState);
+            } else {
+                stateCounts.merge(currentState, -1, Integer::sum);
+            }
+        }
+
         lastMove.getFrom().setPiece(lastMove.getMovingPiece());
         lastMove.getTo().setPiece(lastMove.getCapturedPiece());
         lastMove.getMovingPiece().setMoveCount(lastMove.getMovingPiece().getMoveCount() - 1);
 
+        setNextPlayerColor(lastMove.getMovingPiece().getColor().equals("white") ? "white" : "black");
+
+        // undo king move castling rights
         if (lastMove.getMovingPiece() instanceof King && ((King) lastMove.getMovingPiece()).isCastle(lastMove.getFrom(), lastMove.getTo())) {
-            int row = lastMove.getMovingPiece().getColor().equals("white") ? 0 : 7;
-            int colBefore = lastMove.getTo().getCol() < lastMove.getFrom().getCol() ? 0 : 7;
-            int colNow = lastMove.getTo().getCol() < lastMove.getFrom().getCol() ? 3 : 5;
+            int row;
+            int colBefore;
+            int colNow;
+
+            if (lastMove.getMovingPiece().getColor().equals("white")) {
+                row = 0;
+                if (lastMove.getTo().getCol() < lastMove.getFrom().getCol()) {
+                    // white queen side
+                    colBefore = 0;
+                    colNow = 3;
+                    castlingRights.setWhiteQueenSide(true);
+
+                    Piece otherRook = getPieceAt(0,7);
+                    if (otherRook != null && otherRook.getMoveCount() == 0) castlingRights.setWhiteKingSide(true);
+                } else {
+                    // white king side
+                    colBefore = 7;
+                    colNow = 5;
+                    castlingRights.setWhiteKingSide(true);
+                    Piece otherRook = getPieceAt(0,0);
+                    if (otherRook != null && otherRook.getMoveCount() == 0) castlingRights.setWhiteQueenSide(true);
+                }
+            } else {
+                row = 7;
+                if (lastMove.getTo().getCol() < lastMove.getFrom().getCol()) {
+                    // black queen side
+                    colBefore = 0;
+                    colNow = 3;
+                    castlingRights.setBlackQueenSide(true);
+                    Piece otherRook = getPieceAt(7,7);
+                    if (otherRook != null && otherRook.getMoveCount() == 0) castlingRights.setBlackKingSide(true);
+                } else {
+                    // black king side
+                    colBefore = 7;
+                    colNow = 5;
+                    castlingRights.setBlackKingSide(true);
+                    Piece otherRook = getPieceAt(7,0);
+                    if (otherRook != null && otherRook.getMoveCount() == 0) castlingRights.setBlackQueenSide(true);
+                }
+            }
 
             Square rookNowSquare = getSquare(row, colNow);
             Square rookBeforeSquare = getSquare(row, colBefore);
             rookBeforeSquare.setPiece(rookNowSquare.getPiece());
             rookNowSquare.setPiece(null);
         }
+
+        // undo rook move castling rights
+        if (lastMove.getMovingPiece() instanceof Rook rook && rook.getMoveCount() == 0) {
+            Square kingSquare = null;
+            if (lastMove.getFrom().getRow() == 0) {
+                kingSquare = getSquare(0,4);
+            } else if (lastMove.getFrom().getRow() == 7) {
+                kingSquare = getSquare(7,4);
+            }
+
+            if (kingSquare != null && kingSquare.getPiece() != null && kingSquare.getPiece() instanceof King king && king.getColor().equals(rook.getColor()) && king.getMoveCount() == 0) {
+                if (lastMove.getFrom().getCol() == 0 && lastMove.getFrom().getRow() == 0) castlingRights.setWhiteQueenSide(true);
+                if (lastMove.getFrom().getCol() == 7 && lastMove.getFrom().getRow() == 0) castlingRights.setWhiteKingSide(true);
+                if (lastMove.getFrom().getCol() == 0 && lastMove.getFrom().getRow() == 7) castlingRights.setBlackQueenSide(true);
+                if (lastMove.getFrom().getCol() == 7 && lastMove.getFrom().getRow() == 7) castlingRights.setBlackKingSide(true);
+            }
+        }
+
+        // undo en passant move
+        if (lastMove.getMovingPiece() instanceof Pawn && lastMove.getFrom().getCol() != lastMove.getTo().getCol() && lastMove.getCapturedPiece() == null) {
+            int capturedPawnRow = lastMove.getFrom().getRow();
+            int capturePawnCol = lastMove.getTo().getCol();
+            String capturedPawnColor = lastMove.getMovingPiece().getColor().equals("white") ? "black" : "white";
+
+            getSquare(capturedPawnRow, capturePawnCol).setPiece(new Pawn(capturedPawnColor, 1));
+        }
+
+        if (!moveHistory.isEmpty()) {
+            updateEnPassantTarget(moveHistory.peek().getMovingPiece(), moveHistory.peek().getFrom(), moveHistory.peek().getTo());
+        } else {
+            enPassantTarget = null;
+        }
+
+        // todo: add half move clock and en passant target to move class and get from lastMove
 
     }
 
@@ -256,12 +349,15 @@ public class Board {
     }
 
     public String getNextPlayerColor() {
-        String nextPlayerColor = "white";
-        if (!moveHistory.isEmpty()) {
-            nextPlayerColor = moveHistory.getLast().getMovingPiece().getColor().equals("white") ? "black" : "white";
+        return nextPlayerColor;
+    }
+
+    public void setNextPlayerColor(String color) {
+        if (!color.equals("white") && !color.equals("black")) {
+            throw new IllegalArgumentException("next player color has to be either white or black!");
         }
 
-        return nextPlayerColor;
+        nextPlayerColor = color;
     }
 
     public List<Move> generateAllLegalMoves() {
@@ -273,16 +369,34 @@ public class Board {
                 if (piece != null) {
                     List<Square> possibleDestinationSquares = getPossibleDestinationSquares(square);
                     for (Square destinationSquare : possibleDestinationSquares) {
-                        allLegalMoves.add(new Move(square, destinationSquare, piece, destinationSquare.getPiece()));
+                        if (piece instanceof Pawn && (destinationSquare.getRow() == 0 || destinationSquare.getRow() == 7)) {
+                            // Pawn Promotion: Add all possible promotions
+                            for (PieceType promotionType : List.of(PieceType.QUEEN, PieceType.ROOK, PieceType.BISHOP, PieceType.KNIGHT)) {
+                                allLegalMoves.add(new Move(square, destinationSquare, piece, destinationSquare.getPiece(), promotionType));
+                            }
+                        } else {
+                            // Normal move
+                            allLegalMoves.add(new Move(square, destinationSquare, piece, destinationSquare.getPiece()));
+                        }
                     }
                 }
             }
         }
-
         return allLegalMoves;
     }
 
+    public GameState getCurrentState() {
+        return new GameState(
+                squares,
+                getNextPlayerColor(),
+                castlingRights,
+                enPassantTarget
+        );
+    }
+
+
     // Helper Methods
+
     private boolean isValidPosition(int row, int col) {
         return row >= 0 && row < 8 && col >= 0 && col < 8;
     }
@@ -324,19 +438,25 @@ public class Board {
         from.setPiece(null);
     }
 
-    private void handlePromotion(Square to) {
+    private void handlePromotion(Square to, PieceType promotionPieceType) {
         Piece piece = to.getPiece();
         if (piece instanceof Pawn promotingPawn && (to.getRow() == 0 || to.getRow() == 7)) {
 
-            // Use the GUI callback-based promotion
-            promotionHandler.choosePromotionPiece(promotingPawn, selectedType -> {
-                // Ensure a valid piece type is chosen (fallback to Queen if null)
-                PieceType promotedType = (selectedType != null) ? selectedType : PieceType.QUEEN;
-
-                // Create the promoted piece
-                Piece newPiece = createPromotedPiece(promotedType, promotingPawn, to.getColor().equals("white"));
+            if (promotionPieceType != null) {
+                Piece newPiece = createPromotedPiece(promotionPieceType, promotingPawn, to.getColor().equals("white"));
                 to.setPiece(newPiece);
-            });
+            } else {
+
+                // Use the GUI callback-based promotion
+                promotionHandler.choosePromotionPiece(promotingPawn, selectedType -> {
+                    // Ensure a valid piece type is chosen (fallback to Queen if null)
+                    PieceType promotedType = (selectedType != null) ? selectedType : PieceType.QUEEN;
+
+                    // Create the promoted piece
+                    Piece newPiece = createPromotedPiece(promotedType, promotingPawn, to.getColor().equals("white"));
+                    to.setPiece(newPiece);
+                });
+            }
         }
     }
 
@@ -389,15 +509,6 @@ public class Board {
         } else {
             enPassantTarget = null;
         }
-    }
-
-    private GameState getCurrentState() {
-        return new GameState(
-                squares,
-                getNextPlayerColor(),
-                castlingRights,
-                enPassantTarget
-        );
     }
 
     private List<Piece> getAllPieces() {

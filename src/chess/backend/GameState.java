@@ -26,12 +26,50 @@ public class GameState {
         return copy;
     }
 
+    public Square getEnPassantTarget() {
+        return this.enPassantTarget;
+    }
+
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        // First condition
+        if (this == o) {
+            return true;
+        }
+
+        // Second condition
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
         GameState gameState = (GameState) o;
-        return Objects.deepEquals(squares, gameState.squares) && Objects.equals(player, gameState.player) && Objects.equals(castlingRights, gameState.castlingRights) && Objects.equals(enPassantTarget, gameState.enPassantTarget);
+
+        // Third condition
+        boolean squaresEqual = Objects.deepEquals(squares, gameState.squares);
+        if (!squaresEqual) {
+            return false;
+        }
+
+        // Fourth condition
+        boolean playersEqual = Objects.equals(player, gameState.player);
+        if (!playersEqual) {
+            return false;
+        }
+
+        // Fifth condition
+        boolean castlingRightsEqual = Objects.equals(castlingRights, gameState.castlingRights);
+        if (!castlingRightsEqual) {
+            return false;
+        }
+
+        // Sixth condition
+        boolean enPassantTargetEqual = Objects.equals(enPassantTarget, gameState.enPassantTarget);
+        if (!enPassantTargetEqual) {
+            return false;
+        }
+
+        // All conditions passed
+        return true;
     }
 
     @Override

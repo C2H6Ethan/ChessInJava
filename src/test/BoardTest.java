@@ -556,7 +556,9 @@ class BoardTest {
         Square to = board.getSquare(0, 6);
         from.setPiece(whiteKing);
         board.getSquare(0, 7).setPiece(whiteRook);
+        board.getSquare(0,0).setPiece(whiteRook);
 
+        GameState stateBeforeCastle = board.getCurrentState();
         board.move(from, to);
         assertNotNull(board.getPieceAt(0, 5));
 
@@ -564,5 +566,66 @@ class BoardTest {
         board.undoLastMove();
         assertEquals(board.getPieceAt(0,7), whiteRook);
         assertEquals(board.getPieceAt(0,4), whiteKing);
+
+        GameState stateAfterUndo = board.getCurrentState();
+        //positions should be the same
+        assertEquals(stateBeforeCastle, stateAfterUndo);
+    }
+
+    @Test
+    void undoEnPassantTarget() {
+        Board board = new Board();
+        board.getSquare(1, 0).setPiece(new Pawn("white"));
+        board.getSquare(3,1).setPiece(new Pawn("black"));
+        board.move(board.getSquare(1, 0), board.getSquare(3, 0));
+
+        GameState beforeEnPassantMove = board.getCurrentState();
+        board.move(board.getSquare(3, 1), board.getSquare(2, 0));
+        assertNull(board.getPieceAt(3, 0));
+        assertEquals(board.getPieceAt(2, 0).getColor(), "black");
+
+        board.undoLastMove();
+        GameState afterUndo = board.getCurrentState();
+        assertEquals(beforeEnPassantMove, afterUndo);
+    }
+
+    @Test
+    void undoRookMoveCastleRights() {
+        Board board = new Board();
+        King whiteKing = new King("white");
+        Rook whiteRook = new Rook("white");
+        Square from = board.getSquare(0, 0);
+        Square to = board.getSquare(0, 1);
+        board.getSquare(0,4).setPiece(whiteKing);
+        board.getSquare(0, 7).setPiece(whiteRook);
+        board.getSquare(0,0).setPiece(whiteRook);
+
+        GameState stateBeforeRookMove = board.getCurrentState();
+        board.move(from, to);
+
+        // undo
+        board.undoLastMove();
+
+        GameState stateAfterUndo = board.getCurrentState();
+        //positions should be the same
+        assertEquals(stateBeforeRookMove, stateAfterUndo);
+    }
+
+    @Test
+    void undoPromotion() {
+        Board board = new Board();
+        Square from = board.getSquare(6, 0);
+        Square to = board.getSquare(7, 0);
+        from.setPiece(new Pawn("white"));
+
+        GameState beforePromotion = board.getCurrentState();
+
+        board.move(from, to, PieceType.BISHOP);
+        assertEquals(to.getPiece(), new Bishop("white"));
+
+        board.undoLastMove();
+        GameState afterUndo = board.getCurrentState();
+
+        assertEquals(beforePromotion, afterUndo);
     }
 }

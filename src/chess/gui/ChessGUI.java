@@ -43,10 +43,7 @@ public class ChessGUI extends Application {
     @Override
     public void start(Stage primaryStage) {
         board = new Board();
-        //board.setupPieces();
-        board.randomlySetPiece(new King("white"));
-        board.randomlySetPiece(new King("black"));
-        board.randomlySetPiece(new Queen("white"));
+        board.setupPieces();
         board.setPromotionHandler(new GUIPromotionHandler(this));
 
         bot = new RandomBot(board);
