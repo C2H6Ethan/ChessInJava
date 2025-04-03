@@ -1,36 +1,67 @@
 package chess.backend;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class Main {
-    public static void main(String[] args) {
-        Board board = new Board();
-        board.setupPieces();
-
+    public static void main(String[] args) throws InterruptedException, ExecutionException {
         int depth = 6;
         long startTime = System.nanoTime();
 
-        long totalNodes = perft(depth, board);
+        // Create thread pool
+        int threads = Runtime.getRuntime().availableProcessors();
+        ExecutorService executor = Executors.newFixedThreadPool(threads);
+
+        // Generate root moves from a temporary board
+        Board tempBoard = new Board();
+        tempBoard.setupPieces();
+        List<Move> rootMoves = tempBoard.generateMoves();
+
+        // List to hold results
+        List<Future<Long>> futures = new ArrayList<>();
+
+        // Submit tasks
+        for (Move move : rootMoves) {
+            futures.add(executor.submit(() -> {
+                Board threadBoard = new Board();
+                threadBoard.setupPieces(); // Fresh starting position
+
+                // Apply the move
+                threadBoard.move(threadBoard.getSquare(move.getFrom().getRow(), move.getFrom().getCol()), threadBoard.getSquare(move.getTo().getRow(), move.getTo().getCol()), move.getPromotionPiece());
+
+
+                if (!threadBoard.isInCheck(move.getMovingPiece().getColor())) {
+                    return perft(depth - 1, threadBoard);
+                }
+                return 0L;
+            }));
+        }
+
+        // Sum results
+        long totalNodes = 0;
+        for (Future<Long> future : futures) {
+            totalNodes += future.get();
+        }
+
+        executor.shutdown();
 
         long endTime = System.nanoTime();
         long durationMs = (endTime - startTime) / 1_000_000;
-        double nodesPerSecond = (totalNodes * 1000.0) / durationMs;
-        double millionNodesPerSecond = nodesPerSecond / 1_000_000;
+        double mnps = (totalNodes / (double)durationMs) / 1000.0;
 
         System.out.println("Depth: " + depth);
         System.out.println("Nodes: " + totalNodes);
         System.out.println("Time: " + durationMs + " ms");
-        System.out.printf("Speed: %.2f million nodes/second\n", millionNodesPerSecond);
+        System.out.println("Threads used: " + threads);
+        System.out.printf("Speed: %.2f million nodes/second\n", mnps);
     }
 
     public static long perft(int depth, Board board) {
+        if (depth == 0) return 1;
 
         long nodes = 0;
-
-        if (depth == 0) {
-            return 1;
-        }
-
         List<Move> moves = board.generateMoves();
 
         for (Move move : moves) {
@@ -42,36 +73,5 @@ public class Main {
         }
 
         return nodes;
-    }
-
-    public static void setupPromotionPerft(Board board) {
-        Pawn whitePawn = new Pawn("white");
-        board.getSquare(6,0).setPiece(whitePawn);
-        board.getSquare(6,1).setPiece(whitePawn);
-        board.getSquare(6,2).setPiece(whitePawn);
-
-        Pawn blackPawn = new Pawn("black");
-        board.getSquare(1, 5).setPiece(blackPawn);
-        board.getSquare(1, 6).setPiece(blackPawn);
-        board.getSquare(1, 7).setPiece(blackPawn);
-
-        Knight whiteKnight = new Knight("white");
-        board.getSquare(0, 5).setPiece(whiteKnight);
-        board.getSquare(0, 7).setPiece(whiteKnight);
-
-        Knight blackKnight = new Knight("black");
-        board.getSquare(7, 0).setPiece(blackKnight);
-        board.getSquare(7, 2).setPiece(blackKnight);
-
-        King whiteKing = new King("white");
-        board.getSquare(1,4).setPiece(whiteKing);
-
-        King blackKing = new King("black");
-        board.getSquare(6,3).setPiece(blackKing);
-
-        board.setNextPlayerColor("black");
-
-        // investigating
-       // board.move(board.getSquare(1,6), board.getSquare(0,5), PieceType.ROOK);
     }
 }
