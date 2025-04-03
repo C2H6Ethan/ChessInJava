@@ -276,6 +276,24 @@ public class Board {
         return possibleDestinationSquares;
     }
 
+    public List<Square> getPeusdoLegalMoves(Square sourceSquare) {
+        // TODO: abstract method that only checks possible squares (Knight: L shape)
+        List<Square> pseudoLegalMoves = new ArrayList<>();
+        Piece sourcePiece = sourceSquare.getPiece();
+
+        if (sourcePiece == null) return pseudoLegalMoves;
+
+        for (int row = 0; row < 8; row++) {
+            for (int col = 0; col < 8; col++) {
+                Square targetSquare = getSquare(row, col);
+                if (sourcePiece.getColor().equals(getNextPlayerColor()) && !sourceSquare.equals(targetSquare) && sourcePiece.isValidMove(sourceSquare, targetSquare, this)) {
+                    pseudoLegalMoves.add(targetSquare);
+                }
+            }
+        }
+        return pseudoLegalMoves;
+    }
+
     public boolean isInCheck(String color) {
         String colorOfAttacker = color.equals("white") ? "black" : "white";
         Square kingSquare = getKingSquare(color);
@@ -383,6 +401,31 @@ public class Board {
             }
         }
         return allLegalMoves;
+    }
+
+    public List<Move> generateMoves() {
+        List<Move> allPseudoLegalMoves = new ArrayList<>();
+        for (int row = 0; row < 8; row++) {
+            for (int col = 0; col < 8; col++) {
+                Square square = getSquare(row, col);
+                Piece piece = square.getPiece();
+                if (piece != null) {
+                    List<Square> pseudoLegalMoves = getPeusdoLegalMoves(square);
+                    for (Square destinationSquare : pseudoLegalMoves) {
+                        if (piece instanceof Pawn && (destinationSquare.getRow() == 0 || destinationSquare.getRow() == 7)) {
+                            // Pawn Promotion: Add all possible promotions
+                            for (PieceType promotionType : List.of(PieceType.QUEEN, PieceType.ROOK, PieceType.BISHOP, PieceType.KNIGHT)) {
+                                allPseudoLegalMoves.add(new Move(square, destinationSquare, piece, destinationSquare.getPiece(), promotionType));
+                            }
+                        } else {
+                            // Normal move
+                            allPseudoLegalMoves.add(new Move(square, destinationSquare, piece, destinationSquare.getPiece()));
+                        }
+                    }
+                }
+            }
+        }
+        return allPseudoLegalMoves;
     }
 
     public GameState getCurrentState() {

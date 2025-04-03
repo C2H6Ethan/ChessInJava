@@ -5,51 +5,40 @@ import java.util.List;
 public class Main {
     public static void main(String[] args) {
         Board board = new Board();
-        //setupPromotionPerft(board);
         board.setupPieces();
-        //board.move(board.getSquare(1,0), board.getSquare(3,0));
-        //board.move(board.getSquare(6,0), board.getSquare(5,0));
-        //board.move(board.getSquare(3,0), board.getSquare(4,0));
-        //board.move(board.getSquare(6,1), board.getSquare(4,1));
-        //board.move(board.getSquare(1,2), board.getSquare(2,2));
 
-        for (int depth = 6; depth <= 6; depth++) {
-            long startTime = System.nanoTime();
-            long totalNodes = 0;
+        int depth = 6;
+        long startTime = System.nanoTime();
 
-            List<Move> moves = board.generateAllLegalMoves();
-            for (Move move : moves) {
-                board.move(move.getFrom(), move.getTo(), move.getPromotionPiece()); // Apply move
-                long nodes = perft(depth - 1, board); // Recursively explore further moves
-                board.undoLastMove(); // Undo move to restore board state
-                totalNodes += nodes;
-                if (move.getPromotionPiece() != null) {
-                    System.out.println(move.getFrom() + " " + move.getTo() + " " + nodes + " promotes to " + move.getPromotionPiece());
-                } else {
-                    System.out.println(move.getFrom() + " " + move.getTo() + " " + nodes);
-                }
-            }
+        long totalNodes = perft(depth, board);
 
-            long endTime = System.nanoTime();
-            System.out.println("Moves: " + moves.size());
-            System.out.println("Nodes: " + totalNodes);
-            System.out.println("Depth " + depth + " completed in " + (endTime - startTime) / 1_000_000 + " ms");
-            System.out.println();
-        }
+        long endTime = System.nanoTime();
+        long durationMs = (endTime - startTime) / 1_000_000;
+        double nodesPerSecond = (totalNodes * 1000.0) / durationMs;
+        double millionNodesPerSecond = nodesPerSecond / 1_000_000;
+
+        System.out.println("Depth: " + depth);
+        System.out.println("Nodes: " + totalNodes);
+        System.out.println("Time: " + durationMs + " ms");
+        System.out.printf("Speed: %.2f million nodes/second\n", millionNodesPerSecond);
     }
 
     public static long perft(int depth, Board board) {
+
+        long nodes = 0;
+
         if (depth == 0) {
             return 1;
         }
 
-        long nodes = 0;
-        List<Move> moves = board.generateAllLegalMoves();
+        List<Move> moves = board.generateMoves();
 
         for (Move move : moves) {
-            board.move(move.getFrom(), move.getTo(), move.getPromotionPiece()); // Apply the move
-            nodes += perft(depth - 1, board); // Recursively explore further moves
-            board.undoLastMove(); // Undo move to restore board state
+            board.move(move.getFrom(), move.getTo(), move.getPromotionPiece());
+            if (!board.isInCheck(move.getMovingPiece().getColor())) {
+                nodes += perft(depth - 1, board);
+            }
+            board.undoLastMove();
         }
 
         return nodes;
