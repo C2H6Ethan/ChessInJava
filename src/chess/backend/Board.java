@@ -107,7 +107,7 @@ public class Board {
         setNextPlayerColor(piece.getColor().equals("white") ? "black" : "white");
         updateCastlingRights(piece, from);
         updateEnPassantTarget(piece, from, to);
-        //recordGameState();
+        recordGameState();
     }
 
     public boolean isLegalMove(Square from, Square to) {
