@@ -2,9 +2,6 @@ package chess.bots;
 
 import chess.backend.Board;
 import chess.backend.Move;
-import chess.backend.Square;
-import chess.backend.Piece;
-import javafx.util.Pair;
 
 import java.util.*;
 
