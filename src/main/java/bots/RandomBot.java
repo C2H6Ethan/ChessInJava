@@ -1,7 +1,7 @@
-package chess.bots;
+package main.java.bots;
 
-import chess.backend.Board;
-import chess.backend.Move;
+import main.java.logic.Board;
+import main.java.logic.Move;
 
 import java.util.*;
 

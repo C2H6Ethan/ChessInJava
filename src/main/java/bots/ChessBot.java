@@ -1,6 +1,4 @@
-package chess.bots;
-
-import chess.backend.Board;
+package main.java.bots;
 
 public interface ChessBot {
     public abstract void makeMove();

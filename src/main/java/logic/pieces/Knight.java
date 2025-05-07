@@ -1,4 +1,7 @@
-package chess.backend;
+package main.java.logic.pieces;
+
+import main.java.logic.Board;
+import main.java.logic.Square;
 
 public class Knight extends Piece {
     public Knight(String color) {

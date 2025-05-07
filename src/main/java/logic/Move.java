@@ -1,4 +1,7 @@
-package chess.backend;
+package main.java.logic;
+
+import main.java.logic.pieces.Piece;
+import main.java.logic.pieces.PieceType;
 
 public class Move {
     private final Square from;

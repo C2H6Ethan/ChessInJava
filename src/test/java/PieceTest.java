@@ -1,8 +1,8 @@
-package test;
+package test.java;
 
-import chess.backend.Board;
-import chess.backend.King;
-import chess.backend.Pawn;
+import main.java.logic.Board;
+import main.java.logic.pieces.King;
+import main.java.logic.pieces.Pawn;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;

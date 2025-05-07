@@ -1,4 +1,6 @@
-package chess.backend;
+package main.java.logic;
+
+import main.java.logic.pieces.Piece;
 
 import java.util.Objects;
 

@@ -1,4 +1,4 @@
-package chess.backend;
+package main.java.logic.pieces;
 
 public enum PieceType {
     QUEEN, ROOK, BISHOP, KNIGHT;

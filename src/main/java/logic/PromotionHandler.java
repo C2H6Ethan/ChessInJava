@@ -1,4 +1,7 @@
-package chess.backend;
+package main.java.logic;
+
+import main.java.logic.pieces.Pawn;
+import main.java.logic.pieces.PieceType;
 
 import java.util.function.Consumer;
 
