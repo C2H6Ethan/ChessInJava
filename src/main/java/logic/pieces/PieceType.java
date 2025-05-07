@@ -1,4 +1,4 @@
-package main.java.logic.pieces;
+package logic.pieces;
 
 public enum PieceType {
     QUEEN, ROOK, BISHOP, KNIGHT;

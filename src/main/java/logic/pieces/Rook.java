@@ -1,7 +1,7 @@
-package main.java.logic.pieces;
+package logic.pieces;
 
-import main.java.logic.Board;
-import main.java.logic.Square;
+import logic.Board;
+import logic.Square;
 
 public class Rook extends Piece {
     public Rook(String color) {

@@ -1,7 +1,7 @@
-package main.java.logic;
+package logic;
 
-import main.java.logic.pieces.Piece;
-import main.java.logic.pieces.PieceType;
+import logic.pieces.Piece;
+import logic.pieces.PieceType;
 
 public class Move {
     private final Square from;

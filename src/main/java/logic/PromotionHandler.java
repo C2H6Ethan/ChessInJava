@@ -1,7 +1,7 @@
-package main.java.logic;
+package logic;
 
-import main.java.logic.pieces.Pawn;
-import main.java.logic.pieces.PieceType;
+import logic.pieces.Pawn;
+import logic.pieces.PieceType;
 
 import java.util.function.Consumer;
 

@@ -1,4 +1,4 @@
-package main.java.bots;
+package bots;
 
 public interface ChessBot {
     public abstract void makeMove();

@@ -1,9 +1,7 @@
-package test.java;
-
-import main.java.logic.Board;
-import main.java.logic.GameState;
-import main.java.logic.Square;
-import main.java.logic.pieces.*;
+import logic.Board;
+import logic.GameState;
+import logic.Square;
+import logic.pieces.*;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collection;

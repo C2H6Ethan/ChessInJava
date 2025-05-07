@@ -1,6 +1,6 @@
-package main.java.logic;
+package logic;
 
-import main.java.logic.pieces.Piece;
+import logic.pieces.Piece;
 
 import java.util.Objects;
 

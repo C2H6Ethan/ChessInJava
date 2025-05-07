@@ -1,7 +1,5 @@
-package test.java;
-
-import main.java.logic.pieces.King;
-import main.java.logic.Square;
+import logic.pieces.King;
+import logic.Square;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;

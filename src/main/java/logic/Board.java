@@ -1,6 +1,6 @@
-package main.java.logic;
+package logic;
 
-import main.java.logic.pieces.*;
+import logic.pieces.*;
 
 import java.util.*;
 import java.util.function.Consumer;

@@ -1,7 +1,7 @@
-package main.java.bots;
+package bots;
 
-import main.java.logic.Board;
-import main.java.logic.Move;
+import logic.Board;
+import logic.Move;
 
 import java.util.*;
 

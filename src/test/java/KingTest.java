@@ -1,11 +1,9 @@
-package test.java;
-
-import main.java.logic.Board;
-import main.java.logic.Square;
-import main.java.logic.pieces.Bishop;
-import main.java.logic.pieces.King;
-import main.java.logic.pieces.Pawn;
-import main.java.logic.pieces.Rook;
+import logic.Board;
+import logic.Square;
+import logic.pieces.Bishop;
+import logic.pieces.King;
+import logic.pieces.Pawn;
+import logic.pieces.Rook;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
