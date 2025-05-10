@@ -1,7 +1,11 @@
 package backend;
 
+import logic.Square;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api")
@@ -15,6 +19,16 @@ class ChessController {
     @GetMapping("/board")
     public String getBoard() {
         return chessService.getBoard();
+    }
+
+    @GetMapping("/possibleDestinationSquares")
+    public ResponseEntity<List<Square>> getPossibleDestinationSquares(@RequestBody MinimalSquare square) {
+        try {
+            return ResponseEntity.ok(chessService.getPossibleDestinationSquares(square));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(null);
+        }
+
     }
 
     @PostMapping("/move")

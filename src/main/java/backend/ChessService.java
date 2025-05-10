@@ -2,36 +2,47 @@ package backend;
 
 import logic.Board;
 import logic.Square;
+import logic.pieces.Pawn;
 import org.springframework.stereotype.Service;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class ChessService {
-    private final Board game;
+    private final Board board;
 
     public ChessService() {
-        game = new Board();
-        game.setupPieces();
+        board = new Board();
+        board.setupPieces();
+        board.getSquare(2, 1).setPiece(new Pawn("black"));
     }
 
     public String getBoard() {
-        return game.toString();
+        return board.toString();
     }
 
     public Boolean move(MoveRequest moveRequest) {
         Square from;
         Square to;
         try {
-            from = game.getSquare(moveRequest.getFromRow(), moveRequest.getFromCol());
-            to = game.getSquare(moveRequest.getToRow(), moveRequest.getToCol());
+            from = board.getSquare(moveRequest.getFrom().getRow(), moveRequest.getFrom().getCol());
+            to = board.getSquare(moveRequest.getTo().getRow(), moveRequest.getTo().getCol());
         } catch (IllegalArgumentException e) {
             return false;
         }
 
-        if (game.isLegalMove(from, to)) {
-            game.move(from, to);
+        if (board.isLegalMove(from, to)) {
+            board.move(from, to);
             return true;
         } else {
             return false;
         }
+    }
+
+    public List<Square> getPossibleDestinationSquares(MinimalSquare square) {
+        Square s = board.getSquare(square.getRow(), square.getCol());
+
+        return board.getPossibleDestinationSquares(s);
     }
 }
