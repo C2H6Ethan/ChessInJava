@@ -44,6 +44,17 @@ public class Square {
         return col;
     }
 
+    public String toAlgebraicNotation() {
+        StringBuilder s = new StringBuilder();
+        String files = "abcdefgh";
+
+        char file = files.charAt(col);
+        s.append(file);
+        s.append(row + 1);
+
+        return s.toString();
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

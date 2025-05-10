@@ -8,15 +8,15 @@ public class CastlingRights {
     private boolean blackKingSide;
     private boolean blackQueenSide;
 
-    public CastlingRights(boolean whiteQueenSide, boolean blackKingSide, boolean blackQueenSide, boolean whiteKingSide) {
+    public CastlingRights(boolean whiteKingSide, boolean whiteQueenSide, boolean blackKingSide, boolean blackQueenSide) {
+        this.whiteKingSide = whiteKingSide;
         this.whiteQueenSide = whiteQueenSide;
         this.blackKingSide = blackKingSide;
         this.blackQueenSide = blackQueenSide;
-        this.whiteKingSide = whiteKingSide;
     }
 
     public CastlingRights copy() {
-        return new CastlingRights(whiteQueenSide, blackKingSide, blackQueenSide, whiteKingSide);
+        return new CastlingRights(whiteKingSide, whiteQueenSide, blackKingSide, blackQueenSide);
     }
 
     public void setWhiteKingSide(boolean canCastle) {
@@ -46,5 +46,20 @@ public class CastlingRights {
     @Override
     public int hashCode() {
         return Objects.hash(whiteKingSide, whiteQueenSide, blackKingSide, blackQueenSide);
+    }
+
+    @Override
+    public String toString() {
+        // used for fen
+        StringBuilder s = new StringBuilder();
+
+        if (whiteKingSide) s.append('K');
+        if (whiteQueenSide) s.append('Q');
+        if (blackKingSide) s.append('k');
+        if (blackQueenSide) s.append('q');
+
+        if (s.isEmpty()) return "-";
+
+        return s.toString();
     }
 }

@@ -57,4 +57,17 @@ public abstract class Piece {
     public String toString() {
         return color + " " + this.getClass().getSimpleName(); // E.g., "white Pawn"
     }
+
+    public char toChar() {
+        // returns 'p' for a black pawn and 'P' for a white pawn, used in FEN string
+
+        char pieceChar;
+        // Knights should return N instead of K
+        if (this instanceof Knight) pieceChar = 'N';
+        else pieceChar = this.getClass().getSimpleName().charAt(0);
+
+        if (color.equals("black")) pieceChar = Character.toLowerCase(pieceChar);
+
+        return pieceChar;
+    }
 }

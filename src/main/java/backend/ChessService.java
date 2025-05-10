@@ -13,6 +13,6 @@ public class ChessService {
     }
 
     public String getBoard() {
-        return "test board";
+        return game.toString();
     }
 }

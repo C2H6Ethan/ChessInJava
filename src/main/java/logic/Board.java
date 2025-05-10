@@ -14,6 +14,7 @@ public class Board {
     private final Map<GameState, Integer> stateCounts = new HashMap<>();
     private final Stack<GameState> gameHistory = new Stack<>(); // todo: zobrist hash
     private int halfMoveClock = 0;
+    private int fullMoveCounter = 1;
     private String nextPlayerColor = "white";
 
     public Board() {
@@ -100,7 +101,7 @@ public class Board {
         Piece piece = from.getPiece();
 
         handleEnPassant(piece, from, to);
-        updateHalfMoveClock(piece, to);
+        updateCounters(piece, to);
         handleCastling(piece, from, to);
 
         movePiece(from, to);
@@ -454,12 +455,14 @@ public class Board {
         }
     }
 
-    private void updateHalfMoveClock(Piece piece, Square to) {
+    private void updateCounters(Piece piece, Square to) {
         if (piece instanceof Pawn || to.getPiece() != null) {
             halfMoveClock = 0;
         } else {
             halfMoveClock++;
         }
+
+        if (piece.getColor().equals("black")) fullMoveCounter ++;
     }
 
     private void handleCastling(Piece piece, Square from, Square to) {
@@ -601,4 +604,58 @@ public class Board {
 
         return true;
     }
+
+    @Override
+    public String toString() {
+        // return board as FEN String
+        StringBuilder fen = new StringBuilder();
+
+        // pieces (need to go in backwards order because FEN string starts with 8th rank
+        for (int i = 7; i >= 0; i--) {
+            Square[] rank = this.squares[i];
+            int emptySquareCounter = 0;
+
+            for (int j = 0; j <= 7; j++) {
+                Square square = rank[j];
+                Piece piece = square.getPiece();
+                if (piece == null) {
+                    emptySquareCounter++;
+                } else {
+                    if (emptySquareCounter != 0) {
+                        fen.append(emptySquareCounter);
+                        emptySquareCounter = 0;
+                    }
+
+                    fen.append(piece.toChar());
+                }
+            }
+
+            if (emptySquareCounter != 0) fen.append(emptySquareCounter);
+            if (i != 0) fen.append('/'); // only add / in between ranks
+        }
+
+        // player to move
+        fen.append(" ");
+        fen.append(nextPlayerColor.charAt(0));
+
+        // castling rights
+        fen.append(" ");
+        fen.append(castlingRights.toString());
+
+        // en passant target square
+        fen.append(" ");
+        if (enPassantTarget != null) fen.append(enPassantTarget.toAlgebraicNotation());
+        else fen.append("-");
+
+        // half move clock
+        fen.append(" ");
+        fen.append(halfMoveClock);
+
+        // full move counter
+        fen.append(" ");
+        fen.append(fullMoveCounter);
+
+        return fen.toString();
+    }
+
 }
