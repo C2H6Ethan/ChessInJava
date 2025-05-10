@@ -240,8 +240,8 @@ public class Board {
             enPassantTarget = null;
         }
 
-        // todo: add half move clock and en passant target to move class and get from lastMove
-
+        if (lastMove.getMovingPiece().getColor().equals("black")) fullMoveCounter--;
+        halfMoveClock = lastMove.getHalfMoveClock();
     }
 
     public Piece getPieceAt(int row, int col) {
@@ -393,11 +393,11 @@ public class Board {
                         if (piece instanceof Pawn && (destinationSquare.getRow() == 0 || destinationSquare.getRow() == 7)) {
                             // Pawn Promotion: Add all possible promotions
                             for (PieceType promotionType : List.of(PieceType.QUEEN, PieceType.ROOK, PieceType.BISHOP, PieceType.KNIGHT)) {
-                                allLegalMoves.add(new Move(square, destinationSquare, piece, destinationSquare.getPiece(), promotionType));
+                                allLegalMoves.add(new Move(square, destinationSquare, piece, destinationSquare.getPiece(), halfMoveClock, promotionType));
                             }
                         } else {
                             // Normal move
-                            allLegalMoves.add(new Move(square, destinationSquare, piece, destinationSquare.getPiece()));
+                            allLegalMoves.add(new Move(square, destinationSquare, piece, destinationSquare.getPiece(), halfMoveClock));
                         }
                     }
                 }
@@ -418,11 +418,11 @@ public class Board {
                         if (piece instanceof Pawn && (destinationSquare.getRow() == 0 || destinationSquare.getRow() == 7)) {
                             // Pawn Promotion: Add all possible promotions
                             for (PieceType promotionType : List.of(PieceType.QUEEN, PieceType.ROOK, PieceType.BISHOP, PieceType.KNIGHT)) {
-                                allPseudoLegalMoves.add(new Move(square, destinationSquare, piece, destinationSquare.getPiece(), promotionType));
+                                allPseudoLegalMoves.add(new Move(square, destinationSquare, piece, destinationSquare.getPiece(), halfMoveClock, promotionType));
                             }
                         } else {
                             // Normal move
-                            allPseudoLegalMoves.add(new Move(square, destinationSquare, piece, destinationSquare.getPiece()));
+                            allPseudoLegalMoves.add(new Move(square, destinationSquare, piece, destinationSquare.getPiece(), halfMoveClock));
                         }
                     }
                 }
@@ -481,7 +481,7 @@ public class Board {
     private void movePiece(Square from, Square to) {
         Piece piece = from.getPiece();
         piece.incrementMoveCount();
-        moveHistory.push(new Move(from, to, piece, to.getPiece()));
+        moveHistory.push(new Move(from, to, piece, to.getPiece(), halfMoveClock - 1));
         to.setPiece(piece);
         from.setPiece(null);
     }

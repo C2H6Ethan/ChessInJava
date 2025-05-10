@@ -9,20 +9,23 @@ public class Move {
     private final Piece movingPiece;
     private final Piece capturedPiece;
     private final PieceType promotionPiece;
+    private final int halfMoveClock;
 
-    public Move(Square from, Square to, Piece movingPiece, Piece capturedPiece) {
+    public Move(Square from, Square to, Piece movingPiece, Piece capturedPiece, int halfMoveClock) {
         this.from = from;
         this.to = to;
         this.movingPiece = movingPiece;
         this.capturedPiece = capturedPiece;
+        this.halfMoveClock = halfMoveClock;
         this.promotionPiece = null;
     }
 
-    public Move(Square from, Square to, Piece movingPiece, Piece capturedPiece, PieceType promotionPiece) {
+    public Move(Square from, Square to, Piece movingPiece, Piece capturedPiece, int halfMoveClock, PieceType promotionPiece) {
         this.from = from;
         this.to = to;
         this.movingPiece = movingPiece;
         this.capturedPiece = capturedPiece;
+        this.halfMoveClock = halfMoveClock;
         this.promotionPiece = promotionPiece;
     }
 
@@ -43,4 +46,6 @@ public class Move {
     }
 
     public Piece getCapturedPiece() {return capturedPiece;}
+
+    public int getHalfMoveClock() { return halfMoveClock; }
 }
