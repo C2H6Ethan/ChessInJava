@@ -31,6 +31,11 @@ class ChessController {
 
     }
 
+    @GetMapping("/gameStatus")
+    public GameStatus getGameStatus() {
+        return chessService.getGameStatus();
+    }
+
     @PostMapping("/move")
     public ResponseEntity<String> move(@RequestBody MoveRequest moveRequest) {
         boolean success = chessService.move(moveRequest);
