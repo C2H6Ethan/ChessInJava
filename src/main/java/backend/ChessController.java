@@ -4,7 +4,6 @@ import logic.Square;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -22,9 +21,9 @@ class ChessController {
     }
 
     @GetMapping("/possibleDestinationSquares")
-    public ResponseEntity<List<Square>> getPossibleDestinationSquares(@RequestBody MinimalSquare square) {
+    public ResponseEntity<List<Square>> getPossibleDestinationSquares(@RequestParam int row, @RequestParam int col) {
         try {
-            return ResponseEntity.ok(chessService.getPossibleDestinationSquares(square));
+            return ResponseEntity.ok(chessService.getPossibleDestinationSquares(new MinimalSquare(row, col)));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(null);
         }
