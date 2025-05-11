@@ -161,6 +161,9 @@ export class AppComponent implements AfterViewInit {
             this.possibleDestinationSquares = [];
             this.drawBoard(boardFEN);
           });
+          this.gameService.getGameState().subscribe(gameState => {
+            console.log(gameState);
+          });
         });
       } else {
         this.gameService.getPossibleDestinationSquares(row, col).subscribe(data => {

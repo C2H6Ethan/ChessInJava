@@ -20,4 +20,8 @@ export class GameService {
     return this.http.post<string>('api/move', {from: {row: fromRow, col: fromCol}, to: {row: toRow, col: toCol}}, { responseType: 'text' as 'json' } )
   }
 
+  getGameState(): Observable<{gamerOver: boolean, status: string, reason: string}> {
+    return this.http.get<{gamerOver: boolean, status: string, reason: string}>('api/gameStatus')
+  }
+
 }
