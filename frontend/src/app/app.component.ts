@@ -15,6 +15,7 @@ export class AppComponent implements AfterViewInit {
   squareSize = 75;
   canvasSize: number = this.squareSize * 8;
 
+  gameId = 0;
   boardFEN = "";
   possibleDestinationSquares: any[] = [];
   lastClickedSquare: { row: number, col: number } | null = null;
@@ -35,10 +36,7 @@ export class AppComponent implements AfterViewInit {
     this.imagesLoaded = true;
 
     // Then get initial board state
-    this.gameService.getBoard().subscribe(boardFEN => {
-      this.boardFEN = boardFEN;
-      this.drawBoard(boardFEN);
-    });
+    this.newGame();
   }
 
   private async preloadPieceImages(): Promise<void> {
@@ -146,7 +144,7 @@ export class AppComponent implements AfterViewInit {
     const col = guiCol;
 
     if (this.possibleDestinationSquares.length === 0) {
-      this.gameService.getPossibleDestinationSquares(row, col).subscribe(data => {
+      this.gameService.getPossibleDestinationSquares(this.gameId, row, col).subscribe(data => {
         this.possibleDestinationSquares = data;
         this.drawBoard(this.boardFEN);
       });
@@ -157,6 +155,7 @@ export class AppComponent implements AfterViewInit {
 
       if (isPossibleDestinationSquare && this.lastClickedSquare) {
         this.gameService.move(
+          this.gameId,
           this.lastClickedSquare.row,
           this.lastClickedSquare.col,
           row,
@@ -166,7 +165,7 @@ export class AppComponent implements AfterViewInit {
           this.possibleDestinationSquares = [];
           this.drawBoard(boardFEN);
 
-          this.gameService.getGameState().subscribe(gameState => {
+          this.gameService.getGameState(this.gameId).subscribe(gameState => {
             if (gameState.gameOver) {
               // game is over, show game over modal
               this.modalTitle = gameState.status;
@@ -176,7 +175,7 @@ export class AppComponent implements AfterViewInit {
           });
         });
       } else {
-        this.gameService.getPossibleDestinationSquares(row, col).subscribe(data => {
+        this.gameService.getPossibleDestinationSquares(this.gameId, row, col).subscribe(data => {
           this.possibleDestinationSquares = data;
           this.drawBoard(this.boardFEN);
         });
@@ -187,10 +186,14 @@ export class AppComponent implements AfterViewInit {
   }
 
   newGame() {
-    this.gameService.newGame().subscribe(boardFEN => {
-      this.boardFEN = boardFEN;
-      this.drawBoard(boardFEN);
-      this.showGameOverModal = false;
+    this.gameService.newGame().subscribe(gameId => {
+      this.gameId = gameId;
+      this.gameService.getBoard(gameId).subscribe(boardFEN => {
+        this.boardFEN = boardFEN;
+        this.drawBoard(boardFEN);
+      });
     });
+
+    this.showGameOverModal = false;
   }
 }

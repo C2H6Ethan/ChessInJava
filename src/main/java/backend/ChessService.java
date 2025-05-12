@@ -2,33 +2,38 @@ package backend;
 
 import logic.Board;
 import logic.Square;
-import logic.pieces.King;
-import logic.pieces.Pawn;
+
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
+import java.util.Random;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class ChessService {
-    private Board board;
+    private final Map<Integer, Board> boards;
 
     public ChessService() {
-        board = new Board();
-        board.setupPieces();
+        boards = new HashMap<>();
     }
 
-    public String getBoard() {
-        return board.toString();
+    public Board getBoard(Integer id) {
+        return boards.get(id);
     }
 
-    public List<Square> getPossibleDestinationSquares(MinimalSquare square) {
-        Square s = board.getSquare(square.getRow(), square.getCol());
+    public List<Square> getPossibleDestinationSquares(int gameId, int row, int col) {
+        Board board = boards.get(gameId);
+        if (board == null) throw new IllegalArgumentException("game not found with id: " + gameId);
+        Square s = board.getSquare(row, col);
 
         return board.getPossibleDestinationSquares(s);
     }
 
-    public GameStatus getGameStatus() {
+    public GameStatus getGameStatus(int gameId) {
+        Board board = boards.get(gameId);
+        if (board == null) return null;
+
         GameStatus gameStatus = new GameStatus();
         gameStatus.setGameOver(false);
 
@@ -59,6 +64,9 @@ public class ChessService {
     }
 
     public Boolean move(MoveRequest moveRequest) {
+        Board board = boards.get(moveRequest.getGameId());
+        if (board == null) return false;
+
         Square from;
         Square to;
         try {
@@ -76,9 +84,22 @@ public class ChessService {
         }
     }
 
-    public String newGame() {
-        board = new Board();
+    public int newGame() {
+        boolean idIsUnique = false;
+        int gameId = 0;
+
+        while(!idIsUnique) {
+            // random 6 digit int as game id
+            gameId = 100_000 + new Random().nextInt(900_000);
+
+            if (!boards.containsKey(gameId)) {
+                idIsUnique = true;
+            }
+        }
+
+        Board board = new Board();
         board.setupPieces();
-        return board.toString();
+        boards.put(gameId, board);
+        return gameId;
     }
 }

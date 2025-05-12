@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import {HttpClient} from '@angular/common/http';
+import {HttpClient, HttpParams} from '@angular/common/http';
 import {Observable} from 'rxjs';
 
 @Injectable({
@@ -8,24 +8,24 @@ import {Observable} from 'rxjs';
 export class GameService {
   constructor(private http: HttpClient) { }
 
-  getBoard(): Observable<string> {
-    return this.http.get<string>('/api/board', { responseType: 'text' as 'json' });
+  getBoard(gameId: number): Observable<string> {
+    return this.http.get<string>('/api/board', { responseType: 'text' as 'json', params: { gameId: gameId } });
   }
 
-  getPossibleDestinationSquares(row: number, col: number): Observable<any> {
-    return this.http.get('/api/possibleDestinationSquares', { params: { row: row, col: col} });
+  getPossibleDestinationSquares(gameId: number, row: number, col: number): Observable<any> {
+    return this.http.get('/api/possibleDestinationSquares', { params: { gameId: gameId, row: row, col: col} });
   }
 
-  move(fromRow: number, fromCol: number, toRow: number, toCol: number): Observable<string> {
-    return this.http.post<string>('api/move', {from: {row: fromRow, col: fromCol}, to: {row: toRow, col: toCol}}, { responseType: 'text' as 'json' } )
+  move(gameId: number, fromRow: number, fromCol: number, toRow: number, toCol: number): Observable<string> {
+    return this.http.post<string>('api/move', {gameId: gameId, from: {row: fromRow, col: fromCol}, to: {row: toRow, col: toCol}}, { responseType: 'text' as 'json' } )
   }
 
-  getGameState(): Observable<{gameOver: boolean, status: string, reason: string}> {
-    return this.http.get<{gameOver: boolean, status: string, reason: string}>('api/gameStatus')
+  getGameState(gameId: number): Observable<{gameOver: boolean, status: string, reason: string}> {
+    return this.http.get<{gameOver: boolean, status: string, reason: string}>('api/gameStatus', { params: { gameId: gameId } })
   }
 
-  newGame(): Observable<string> {
-    return this.http.post<string>('/api/newGame', null, { responseType: 'text' as 'json' });
+  newGame(): Observable<number> {
+    return this.http.post<number>('/api/newGame', null, { responseType: 'text' as 'json' });
   }
 
 }

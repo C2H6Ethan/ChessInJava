@@ -1,5 +1,6 @@
 package backend;
 
+import logic.Board;
 import logic.Square;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,33 +17,34 @@ class ChessController {
     }
 
     @GetMapping("/board")
-    public String getBoard() {
-        return chessService.getBoard();
+    public ResponseEntity<String> getBoard(@RequestParam int gameId) {
+        Board board = chessService.getBoard(gameId);
+        return board != null ? ResponseEntity.ok(board.toString()) : ResponseEntity.badRequest().body("No game found with id: " + gameId);
     }
 
     @GetMapping("/possibleDestinationSquares")
-    public ResponseEntity<List<Square>> getPossibleDestinationSquares(@RequestParam int row, @RequestParam int col) {
+    public ResponseEntity<List<Square>> getPossibleDestinationSquares(@RequestParam int gameId, @RequestParam int row, @RequestParam int col) {
         try {
-            return ResponseEntity.ok(chessService.getPossibleDestinationSquares(new MinimalSquare(row, col)));
+            return ResponseEntity.ok(chessService.getPossibleDestinationSquares(gameId, row, col));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(null);
         }
-
     }
 
     @GetMapping("/gameStatus")
-    public GameStatus getGameStatus() {
-        return chessService.getGameStatus();
+    public ResponseEntity<GameStatus> getGameStatus(@RequestParam int gameId) {
+        GameStatus gameStatus = chessService.getGameStatus(gameId);
+        return gameStatus != null ? ResponseEntity.ok(gameStatus) : ResponseEntity.badRequest().body(null);
     }
 
     @PostMapping("/move")
     public ResponseEntity<String> move(@RequestBody MoveRequest moveRequest) {
         boolean success = chessService.move(moveRequest);
-        return success ? ResponseEntity.ok(chessService.getBoard()) : ResponseEntity.badRequest().body("Invalid move");
+        return success ? ResponseEntity.ok(chessService.getBoard(moveRequest.getGameId()).toString()) : ResponseEntity.badRequest().body("Invalid move");
     }
 
     @PostMapping("/newGame")
-    public String newGame() {
+    public int newGame() {
        return chessService.newGame();
     }
 }
