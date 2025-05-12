@@ -35,7 +35,7 @@ public class ChessService {
         // checkmate must be checked first since 50th move rule does not apply when last move is a checkmate
         if (board.isCheckmate(board.getNextPlayerColor())) {
             gameStatus.setGameOver(true);
-            gameStatus.setStatus(board.getNextPlayerColor().equals("white") ? "black" : "white" + " won");
+            gameStatus.setStatus((board.getNextPlayerColor().equals("white") ? "black" : "white") + " won");
             gameStatus.setReason("by checkmate");
         } else if (board.isStalemate(board.getNextPlayerColor())) {
             gameStatus.setGameOver(true);
