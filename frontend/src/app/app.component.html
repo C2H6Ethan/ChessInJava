@@ -1,1 +1,7 @@
 <canvas #canvas [width]="canvasSize" [height]="canvasSize" (click)="onCanvasClick($event)"></canvas>
+<game-over-modal
+  [title]="modalTitle"
+  [subtext]="modalSubtext"
+  [show]="showGameOverModal"
+  (newGame)="newGame()"
+></game-over-modal>

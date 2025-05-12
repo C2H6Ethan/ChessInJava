@@ -38,6 +38,11 @@ class ChessController {
     @PostMapping("/move")
     public ResponseEntity<String> move(@RequestBody MoveRequest moveRequest) {
         boolean success = chessService.move(moveRequest);
-        return success ? ResponseEntity.ok("Move successful") : ResponseEntity.badRequest().body("Invalid move");
+        return success ? ResponseEntity.ok(chessService.getBoard()) : ResponseEntity.badRequest().body("Invalid move");
+    }
+
+    @PostMapping("/newGame")
+    public String newGame() {
+       return chessService.newGame();
     }
 }

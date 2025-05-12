@@ -11,7 +11,7 @@ import java.util.List;
 
 @Service
 public class ChessService {
-    private final Board board;
+    private Board board;
 
     public ChessService() {
         board = new Board();
@@ -74,5 +74,11 @@ public class ChessService {
         } else {
             return false;
         }
+    }
+
+    public String newGame() {
+        board = new Board();
+        board.setupPieces();
+        return board.toString();
     }
 }

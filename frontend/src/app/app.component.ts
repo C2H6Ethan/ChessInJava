@@ -1,23 +1,29 @@
 import { Component, AfterViewInit, ViewChild } from '@angular/core';
 import { GameService } from './game.service';
 import { CommonModule } from '@angular/common';
+import { ModalComponent } from './gameOverModal.component';
 
 @Component({
   selector: 'app-root',
   templateUrl: './app.component.html',
-  imports: [CommonModule],
+  imports: [CommonModule, ModalComponent],
+  standalone: true,
   styleUrl: './app.component.scss'
 })
 export class AppComponent implements AfterViewInit {
   @ViewChild('canvas', { static: true }) board: any;
-  squareSize = 100;
+  squareSize = 75;
   canvasSize: number = this.squareSize * 8;
 
   boardFEN = "";
   possibleDestinationSquares: any[] = [];
   lastClickedSquare: { row: number, col: number } | null = null;
 
-  // Image cache
+  showGameOverModal = false;
+  modalTitle = '';
+  modalSubtext = '';
+
+  // Image cache to preload images and not make them flicker when redrawing the board
   private pieceImages: Map<string, HTMLImageElement> = new Map();
   private imagesLoaded = false;
 
@@ -155,14 +161,18 @@ export class AppComponent implements AfterViewInit {
           this.lastClickedSquare.col,
           row,
           col
-        ).subscribe(() => {
-          this.gameService.getBoard().subscribe(boardFEN => {
-            this.boardFEN = boardFEN;
-            this.possibleDestinationSquares = [];
-            this.drawBoard(boardFEN);
-          });
+        ).subscribe(boardFEN => {
+          this.boardFEN = boardFEN;
+          this.possibleDestinationSquares = [];
+          this.drawBoard(boardFEN);
+
           this.gameService.getGameState().subscribe(gameState => {
-            console.log(gameState);
+            if (gameState.gameOver) {
+              // game is over, show game over modal
+              this.modalTitle = gameState.status;
+              this.modalSubtext = gameState.reason;
+              this.showGameOverModal = true;
+            }
           });
         });
       } else {
@@ -174,5 +184,13 @@ export class AppComponent implements AfterViewInit {
     }
 
     this.lastClickedSquare = { row, col };
+  }
+
+  newGame() {
+    this.gameService.newGame().subscribe(boardFEN => {
+      this.boardFEN = boardFEN;
+      this.drawBoard(boardFEN);
+      this.showGameOverModal = false;
+    });
   }
 }
