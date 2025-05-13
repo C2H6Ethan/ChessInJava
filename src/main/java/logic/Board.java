@@ -279,7 +279,7 @@ public class Board {
         return possibleDestinationSquares;
     }
 
-    public List<Square> getPeusdoLegalMoves(Square sourceSquare) {
+    public List<Square> getPseudoLegalMoves(Square sourceSquare) {
         // TODO: abstract method that only checks possible squares (Knight: L shape)
         List<Square> pseudoLegalMoves = new ArrayList<>();
         Piece sourcePiece = sourceSquare.getPiece();
@@ -413,7 +413,7 @@ public class Board {
                 Square square = getSquare(row, col);
                 Piece piece = square.getPiece();
                 if (piece != null) {
-                    List<Square> pseudoLegalMoves = getPeusdoLegalMoves(square);
+                    List<Square> pseudoLegalMoves = getPseudoLegalMoves(square);
                     for (Square destinationSquare : pseudoLegalMoves) {
                         if (piece instanceof Pawn && (destinationSquare.getRow() == 0 || destinationSquare.getRow() == 7)) {
                             // Pawn Promotion: Add all possible promotions

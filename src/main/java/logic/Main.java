@@ -6,7 +6,7 @@ import java.util.concurrent.*;
 
 public class Main {
     public static void main(String[] args) throws InterruptedException, ExecutionException {
-        int depth = 6;
+        int depth = 5;
         long startTime = System.nanoTime();
 
         // Create thread pool
@@ -48,11 +48,16 @@ public class Main {
 
         long endTime = System.nanoTime();
         long durationMs = (endTime - startTime) / 1_000_000;
+        double durationS = durationMs / 1000.0;
         double mnps = (totalNodes / (double)durationMs) / 1000.0;
 
         System.out.println("Depth: " + depth);
         System.out.println("Nodes: " + totalNodes);
-        System.out.println("Time: " + durationMs + " ms");
+        if (durationMs > 1000) {
+            System.out.println("Time: " + durationS + " s");
+        } else {
+            System.out.println("Time: " + durationMs + " ms");
+        }
         System.out.println("Threads used: " + threads);
         System.out.printf("Speed: %.2f million nodes/second\n", mnps);
     }
