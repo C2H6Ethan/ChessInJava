@@ -433,7 +433,7 @@ public class Board {
 
     public GameState getCurrentState() {
         return new GameState(
-                squares,
+                this.toString(),
                 getNextPlayerColor(),
                 castlingRights,
                 enPassantTarget
