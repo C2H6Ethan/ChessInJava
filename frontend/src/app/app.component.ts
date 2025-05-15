@@ -2,6 +2,7 @@ import { Component, AfterViewInit, ViewChild } from '@angular/core';
 import { GameService } from './game.service';
 import { CommonModule } from '@angular/common';
 import { ModalComponent } from './gameOverModal.component';
+import {firstValueFrom} from 'rxjs';
 
 @Component({
   selector: 'app-root',
@@ -16,13 +17,14 @@ export class AppComponent implements AfterViewInit {
   canvasSize: number = this.squareSize * 8;
 
   gameId = 0;
-  boardFEN = "";
   possibleDestinationSquares: any[] = [];
   lastClickedSquare: { row: number, col: number } | null = null;
 
   showGameOverModal = false;
   modalTitle = '';
   modalSubtext = '';
+
+  isRequestInProgress = false;
 
   // Image cache to preload images and not make them flicker when redrawing the board
   private pieceImages: Map<string, HTMLImageElement> = new Map();
@@ -36,7 +38,7 @@ export class AppComponent implements AfterViewInit {
     this.imagesLoaded = true;
 
     // Then get initial board state
-    this.newGame();
+    await this.newGame();
   }
 
   private async preloadPieceImages(): Promise<void> {
@@ -130,70 +132,110 @@ export class AppComponent implements AfterViewInit {
     }
   }
 
-  onCanvasClick(event: MouseEvent) {
-    const canvas = this.board.nativeElement;
-    const rect = canvas.getBoundingClientRect();
+  async onCanvasClick(event: MouseEvent) {
+    if (this.isRequestInProgress) return;
+    this.isRequestInProgress = true;
 
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
+    try {
+      const canvas = this.board.nativeElement;
+      const rect = canvas.getBoundingClientRect();
 
-    const guiRow = Math.floor(y / this.squareSize);
-    const guiCol = Math.floor(x / this.squareSize);
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
 
-    const row = 7 - guiRow;
-    const col = guiCol;
+      const guiRow = Math.floor(y / this.squareSize);
+      const guiCol = Math.floor(x / this.squareSize);
 
-    if (this.possibleDestinationSquares.length === 0) {
-      this.gameService.getPossibleDestinationSquares(this.gameId, row, col).subscribe(data => {
-        this.possibleDestinationSquares = data;
-        this.drawBoard(this.boardFEN);
-      });
-    } else {
-      const isPossibleDestinationSquare = this.possibleDestinationSquares.some(
-        square => square['row'] === row && square['col'] === col
-      );
+      const row = 7 - guiRow;
+      const col = guiCol;
 
-      if (isPossibleDestinationSquare && this.lastClickedSquare) {
-        this.gameService.move(
-          this.gameId,
-          this.lastClickedSquare.row,
-          this.lastClickedSquare.col,
-          row,
-          col
-        ).subscribe(boardFEN => {
-          this.boardFEN = boardFEN;
-          this.possibleDestinationSquares = [];
-          this.drawBoard(boardFEN);
-
-          this.gameService.getGameState(this.gameId).subscribe(gameState => {
-            if (gameState.gameOver) {
-              // game is over, show game over modal
-              this.modalTitle = gameState.status;
-              this.modalSubtext = gameState.reason;
-              this.showGameOverModal = true;
-            }
-          });
-        });
+      if (this.possibleDestinationSquares.length === 0) {
+        this.possibleDestinationSquares = await firstValueFrom(this.gameService.getPossibleDestinationSquares(this.gameId, row, col));
+        this.drawBoard(await firstValueFrom(this.gameService.getBoard(this.gameId)));
       } else {
-        this.gameService.getPossibleDestinationSquares(this.gameId, row, col).subscribe(data => {
-          this.possibleDestinationSquares = data;
-          this.drawBoard(this.boardFEN);
-        });
-      }
-    }
+        const isPossibleDestinationSquare = this.possibleDestinationSquares.some(
+          square => square['row'] === row && square['col'] === col
+        );
 
-    this.lastClickedSquare = { row, col };
+        if (isPossibleDestinationSquare && this.lastClickedSquare) {
+          let fen = await firstValueFrom(this.gameService.move(this.gameId, this.lastClickedSquare.row, this.lastClickedSquare.col, row, col))
+          this.possibleDestinationSquares = [];
+          this.drawBoard(fen);
+
+          await this.checkGameState();
+
+          if (!this.showGameOverModal) {
+            let fen = await firstValueFrom(this.gameService.makeSmartBotMove(this.gameId));
+            this.drawBoard(fen);
+            await this.checkGameState();
+          }
+        } else {
+          this.possibleDestinationSquares = await firstValueFrom(this.gameService.getPossibleDestinationSquares(this.gameId, row, col));
+          this.drawBoard(await firstValueFrom(this.gameService.getBoard(this.gameId)));
+        }
+      }
+
+      this.lastClickedSquare = { row, col };
+
+    } finally {
+      this.isRequestInProgress = false;
+    }
   }
 
-  newGame() {
-    this.gameService.newGame().subscribe(gameId => {
-      this.gameId = gameId;
-      this.gameService.getBoard(gameId).subscribe(boardFEN => {
-        this.boardFEN = boardFEN;
-        this.drawBoard(boardFEN);
-      });
-    });
 
+  async checkGameState() {
+    let gameState= await firstValueFrom(this.gameService.getGameState(this.gameId));
+    if (gameState.gameOver) {
+      // game is over, show game over modal
+      this.modalTitle = gameState.status;
+      this.modalSubtext = gameState.reason;
+      this.showGameOverModal = true;
+    }
+  }
+
+  async newGame() {
+    this.showGameOverModal = false;
+
+    // Await game creation
+    this.gameId = await firstValueFrom(this.gameService.newGame());
+
+    // Await initial board fetch
+    this.drawBoard(await firstValueFrom(this.gameService.getBoard(this.gameId)));
+
+
+    //await this.runBotVsBot();
+  }
+
+  closeGameOverModal() {
     this.showGameOverModal = false;
   }
+
+
+  private async runBotVsBot() {
+    let gameOver = false;
+    let counter = 0;
+
+    while (!gameOver) {
+      await this.delay(500);
+      let isWhitesTurn = counter % 2 == 0;
+      // make greedy bot go first, then random bot
+      const boardFEN = await firstValueFrom(isWhitesTurn ? this.gameService.makeSmartBotMove(this.gameId) : this.gameService.makeGreedyBotMove(this.gameId));
+      counter++;
+      this.drawBoard(boardFEN);
+
+      // Await game state check
+      const gameState = await firstValueFrom(this.gameService.getGameState(this.gameId));
+      if (gameState.gameOver) {
+        this.modalTitle = gameState.status;
+        this.modalSubtext = gameState.reason;
+        this.showGameOverModal = true;
+        gameOver = true;
+      }
+    }
+  }
+
+  private delay(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
 }

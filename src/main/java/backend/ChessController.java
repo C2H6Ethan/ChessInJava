@@ -1,5 +1,8 @@
 package backend;
 
+import bots.GreedyBot;
+import bots.RandomBot;
+import bots.SmartBot;
 import logic.Board;
 import logic.Square;
 import org.springframework.http.ResponseEntity;
@@ -46,5 +49,38 @@ class ChessController {
     @PostMapping("/newGame")
     public int newGame() {
        return chessService.newGame();
+    }
+
+    @PostMapping("/makeRandomBotMove")
+    public ResponseEntity<String> makeRandomBotMove(@RequestParam int gameId) {
+        Board board = chessService.getBoard(gameId);
+        if (board == null) return ResponseEntity.badRequest().body("No game found with id: " + gameId);
+
+        RandomBot bot = new RandomBot(board);
+        bot.makeMove();
+
+        return ResponseEntity.ok(board.toString());
+    }
+
+    @PostMapping("/makeGreedyBotMove")
+    public ResponseEntity<String> makeGreedyBotMove(@RequestParam int gameId) {
+        Board board = chessService.getBoard(gameId);
+        if (board == null) return ResponseEntity.badRequest().body("No game found with id: " + gameId);
+
+        GreedyBot bot = new GreedyBot(board);
+        bot.makeMove();
+
+        return ResponseEntity.ok(board.toString());
+    }
+
+    @PostMapping("/makeSmartBotMove")
+    public ResponseEntity<String> makeSmartBotMove(@RequestParam int gameId) {
+        Board board = chessService.getBoard(gameId);
+        if (board == null) return ResponseEntity.badRequest().body("No game found with id: " + gameId);
+
+        SmartBot bot = new SmartBot(board);
+        bot.makeMove();
+
+        return ResponseEntity.ok(board.toString());
     }
 }

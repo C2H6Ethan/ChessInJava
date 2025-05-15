@@ -18,7 +18,7 @@ public class RandomBot implements ChessBot {
         if (!allMoves.isEmpty()) {
             Random random = new Random();
             Move selectedMove = allMoves.get(random.nextInt(allMoves.size()));
-            board.move(selectedMove.getFrom(), selectedMove.getTo());
+            board.move(selectedMove.getFrom(), selectedMove.getTo(), selectedMove.getPromotionPiece());
         }
     }
 }

@@ -60,6 +60,7 @@ public class CastlingRights {
 
         if (s.isEmpty()) return "-";
 
+        System.out.println(s.toString());
         return s.toString();
     }
 }

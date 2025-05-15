@@ -12,8 +12,13 @@ export class ModalComponent {
   @Input() subtext: string = '';
   @Input() show: boolean = false;
   @Output() newGame = new EventEmitter<void>
+  @Output() close = new EventEmitter<void>
 
   onNewGame () {
     this.newGame.emit();
+  }
+
+  onClose () {
+    this.close.emit();
   }
 }

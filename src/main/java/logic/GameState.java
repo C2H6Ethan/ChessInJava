@@ -20,6 +20,8 @@ public class GameState {
         return this.enPassantTarget;
     }
 
+    public CastlingRights getCastlingRights() { return this.castlingRights; }
+
     @Override
     public boolean equals(Object o) {
         // First condition

@@ -9,7 +9,7 @@ public class Board {
     private final Square[][] squares;
     private final Stack<Move> moveHistory = new Stack<>();
     private PromotionHandler promotionHandler = new DefaultPromotionHandler();
-    private final CastlingRights castlingRights = new CastlingRights(true, true, true, true);
+    private CastlingRights castlingRights = new CastlingRights(true, true, true, true);
     private Square enPassantTarget;
     private final Map<GameState, Integer> stateCounts = new HashMap<>();
     private final Stack<GameState> gameHistory = new Stack<>(); // todo: zobrist hash
@@ -29,6 +29,37 @@ public class Board {
     }
 
     //todo: create second constructor with FEN string
+//    public Board(String fen) {
+//        String[] fenParts = fen.split(" ");
+//        if (fenParts.length != 6) throw new IllegalArgumentException("invalid FEN string");
+//
+//        String whitePieces = "PNBRQK";
+//
+//        String piecesString = fenParts[0];
+//        String[] ranks = piecesString.split("/");
+//        int squareCounter = 0;
+//
+//        // fen string are built up like: rank8/rank7/rank6... so we iterate backwards
+//        for (int i = 7; i >= 0; i--) {
+//            String rank = ranks[i];
+//            for (char c : rank.toCharArray()) {
+//                // if c is a number then skip c amount of squares
+//                if (Character.isDigit(c)) {
+//                    squareCounter += Integer.parseInt(String.valueOf(c));
+//                } else {
+//                    if (whitePieces.indexOf(c) != -1) {
+//                        String color = "white";
+//                    }
+//                    c = Character.toLowerCase(c);
+//
+//                    switch (c) {
+//                        case 'p':
+//
+//                    }
+//                }
+//            }
+//        }
+//    }
 
     // Allow UI to override the handler later
     public void setPromotionHandler(PromotionHandler handler) {
@@ -101,10 +132,11 @@ public class Board {
         Piece piece = from.getPiece();
 
         handleEnPassant(piece, from, to);
+        int currentHalfMoveClock = halfMoveClock;
         updateCounters(piece, to);
         handleCastling(piece, from, to);
 
-        movePiece(from, to);
+        movePiece(from, to, currentHalfMoveClock);
         handlePromotion(to, promotionPieceType);
 
         setNextPlayerColor(piece.getColor().equals("white") ? "black" : "white");
@@ -146,6 +178,7 @@ public class Board {
         if (!stateCounts.isEmpty()) {
             // should never be empty if recordGameState() in move method is not uncommented
             GameState currentState = gameHistory.pop();
+            castlingRights = currentState.getCastlingRights().copy();
             if (stateCounts.get(currentState) == 1) {
                 stateCounts.remove(currentState);
             } else {
@@ -159,7 +192,7 @@ public class Board {
 
         setNextPlayerColor(lastMove.getMovingPiece().getColor().equals("white") ? "white" : "black");
 
-        // undo king move castling rights
+        // undo king move castling
         if (lastMove.getMovingPiece() instanceof King && ((King) lastMove.getMovingPiece()).isCastle(lastMove.getFrom(), lastMove.getTo())) {
             int row;
             int colBefore;
@@ -171,17 +204,10 @@ public class Board {
                     // white queen side
                     colBefore = 0;
                     colNow = 3;
-                    castlingRights.setWhiteQueenSide(true);
-
-                    Piece otherRook = getPieceAt(0,7);
-                    if (otherRook != null && otherRook.getMoveCount() == 0) castlingRights.setWhiteKingSide(true);
                 } else {
                     // white king side
                     colBefore = 7;
                     colNow = 5;
-                    castlingRights.setWhiteKingSide(true);
-                    Piece otherRook = getPieceAt(0,0);
-                    if (otherRook != null && otherRook.getMoveCount() == 0) castlingRights.setWhiteQueenSide(true);
                 }
             } else {
                 row = 7;
@@ -189,16 +215,10 @@ public class Board {
                     // black queen side
                     colBefore = 0;
                     colNow = 3;
-                    castlingRights.setBlackQueenSide(true);
-                    Piece otherRook = getPieceAt(7,7);
-                    if (otherRook != null && otherRook.getMoveCount() == 0) castlingRights.setBlackKingSide(true);
                 } else {
                     // black king side
                     colBefore = 7;
                     colNow = 5;
-                    castlingRights.setBlackKingSide(true);
-                    Piece otherRook = getPieceAt(7,0);
-                    if (otherRook != null && otherRook.getMoveCount() == 0) castlingRights.setBlackQueenSide(true);
                 }
             }
 
@@ -208,22 +228,6 @@ public class Board {
             rookNowSquare.setPiece(null);
         }
 
-        // undo rook move castling rights
-        if (lastMove.getMovingPiece() instanceof Rook rook && rook.getMoveCount() == 0) {
-            Square kingSquare = null;
-            if (lastMove.getFrom().getRow() == 0) {
-                kingSquare = getSquare(0,4);
-            } else if (lastMove.getFrom().getRow() == 7) {
-                kingSquare = getSquare(7,4);
-            }
-
-            if (kingSquare != null && kingSquare.getPiece() != null && kingSquare.getPiece() instanceof King king && king.getColor().equals(rook.getColor()) && king.getMoveCount() == 0) {
-                if (lastMove.getFrom().getCol() == 0 && lastMove.getFrom().getRow() == 0) castlingRights.setWhiteQueenSide(true);
-                if (lastMove.getFrom().getCol() == 7 && lastMove.getFrom().getRow() == 0) castlingRights.setWhiteKingSide(true);
-                if (lastMove.getFrom().getCol() == 0 && lastMove.getFrom().getRow() == 7) castlingRights.setBlackQueenSide(true);
-                if (lastMove.getFrom().getCol() == 7 && lastMove.getFrom().getRow() == 7) castlingRights.setBlackKingSide(true);
-            }
-        }
 
         // undo en passant move
         if (lastMove.getMovingPiece() instanceof Pawn && lastMove.getFrom().getCol() != lastMove.getTo().getCol() && lastMove.getCapturedPiece() == null) {
@@ -242,6 +246,7 @@ public class Board {
 
         if (lastMove.getMovingPiece().getColor().equals("black")) fullMoveCounter--;
         halfMoveClock = lastMove.getHalfMoveClock();
+
     }
 
     public Piece getPieceAt(int row, int col) {
@@ -440,6 +445,21 @@ public class Board {
         );
     }
 
+    public List<Piece> getAllPieces() {
+        // TODO: remove once seperate array lists are implemented
+        List<Piece> pieces = new ArrayList<>();
+
+        for (int row = 0; row < 8; row++) {
+            for (int col = 0; col < 8; col++) {
+                Piece piece = getPieceAt(row, col);
+                if (piece != null) {
+                    pieces.add(piece);
+                }
+            }
+        }
+
+        return pieces;
+    }
 
     // Helper Methods
 
@@ -478,10 +498,10 @@ public class Board {
         }
     }
 
-    private void movePiece(Square from, Square to) {
+    private void movePiece(Square from, Square to, int oldHalfMoveClock) {
         Piece piece = from.getPiece();
         piece.incrementMoveCount();
-        moveHistory.push(new Move(from, to, piece, to.getPiece(), halfMoveClock - 1));
+        moveHistory.push(new Move(from, to, piece, to.getPiece(), oldHalfMoveClock));
         to.setPiece(piece);
         from.setPiece(null);
     }
@@ -559,22 +579,6 @@ public class Board {
         }
     }
 
-    private List<Piece> getAllPieces() {
-        // TODO: remove once seperate array lists are implemented
-        List<Piece> pieces = new ArrayList<>();
-
-        for (int row = 0; row < 8; row++) {
-            for (int col = 0; col < 8; col++) {
-                Piece piece = getPieceAt(row, col);
-                if (piece != null) {
-                    pieces.add(piece);
-                }
-            }
-        }
-
-        return pieces;
-    }
-
     private Square getKingSquare(String color) {
         // TODO: keep track of where the kings are in separate variables
         for (int row = 0; row < 8; row++) {
@@ -640,7 +644,7 @@ public class Board {
 
         // castling rights
         fen.append(" ");
-        fen.append(castlingRights.toString());
+        fen.append(castlingRights);
 
         // en passant target square
         fen.append(" ");

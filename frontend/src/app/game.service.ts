@@ -28,4 +28,16 @@ export class GameService {
     return this.http.post<number>('/api/newGame', null, { responseType: 'text' as 'json' });
   }
 
+  makeRandomBotMove(gameId: number): Observable<string> {
+    return this.http.post<string>('api/makeRandomBotMove', null, { responseType: 'text' as 'json', params: { gameId: gameId } })
+  }
+
+  makeGreedyBotMove(gameId: number): Observable<string> {
+    return this.http.post<string>('api/makeGreedyBotMove', null, { responseType: 'text' as 'json', params: { gameId: gameId } })
+  }
+
+  makeSmartBotMove(gameId: number): Observable<string> {
+    return this.http.post<string>('api/makeSmartBotMove', null, { responseType: 'text' as 'json', params: { gameId: gameId } })
+  }
+
 }
